@@ -7,7 +7,7 @@ let _saveTimer = null;
 // ══ 密碼保護 ══
 function checkLogin() {
   const pw = document.getElementById('login-pw').value;
-  if (pw === 'Tumblestudio') {
+  if (pw === '') {
     document.getElementById('login-screen').style.display = 'none';
     sessionStorage.setItem('tw_auth', '1');
   } else {

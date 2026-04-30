@@ -5,187 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>🌿 風滾草記帳本</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
-<style>
-:root{
-  --bg:#fff8f8;--card:#fff;--border:#f0d9db;
-  --pink:#e8829a;--pink-lt:#fdeef1;--pink-md:#f5b8c4;
-  --rose:#d45f7a;--peach:#f7c4cc;
-  --text:#3a2a2d;--muted:#b0868e;
-  --green:#7ab89a;--danger:#e05c6a;
-  --shadow:0 2px 18px rgba(220,130,150,0.10);
-  --radius:16px;--rad-sm:10px;
-}
-*{box-sizing:border-box;margin:0;padding:0;}
-body{background:var(--bg);color:var(--text);font-family:'Noto Sans TC',sans-serif;min-height:100vh;padding-bottom:80px;}
-::-webkit-scrollbar{width:4px;height:4px;}
-::-webkit-scrollbar-thumb{background:var(--peach);border-radius:4px;}
-
-header{background:linear-gradient(135deg,#f7c4cc,#f9dde2,#fdeef1);padding:18px 20px 14px;position:sticky;top:0;z-index:300;box-shadow:0 2px 20px rgba(220,130,150,0.15);}
-.header-inner{max-width:560px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;}
-.logo{display:flex;align-items:center;gap:10px;}
-.logo-text{font-family:'Playfair Display',serif;font-size:1.15rem;color:var(--rose);}
-.op-wrap{display:flex;align-items:center;gap:7px;}
-.op-wrap label{font-size:0.7rem;color:var(--muted);white-space:nowrap;}
-.op-sel{background:rgba(255,255,255,0.75);border:1.5px solid var(--pink-md);border-radius:20px;padding:5px 24px 5px 11px;font-size:0.8rem;font-family:inherit;color:var(--text);outline:none;max-width:110px;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23b0868e' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;}
-
-.tab-nav{background:#fff;border-bottom:1.5px solid var(--border);position:sticky;top:64px;z-index:290;overflow-x:auto;box-shadow:0 1px 8px rgba(220,130,150,0.07);}
-.tab-inner{display:flex;min-width:max-content;max-width:560px;margin:0 auto;}
-.tab-btn{flex:none;padding:11px 14px 9px;background:none;border:none;border-bottom:2.5px solid transparent;font-family:inherit;font-size:0.74rem;font-weight:600;color:var(--muted);cursor:pointer;transition:all 0.2s;white-space:nowrap;}
-.tab-btn.active{color:var(--rose);border-bottom-color:var(--rose);}
-
-.page{display:none;}
-.page.active{display:block;}
-.container{max-width:560px;margin:0 auto;padding:20px 16px 0;}
-
-.sec-title{font-size:0.7rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin:20px 0 11px;display:flex;align-items:center;gap:8px;}
-.sec-title::after{content:'';flex:1;height:1px;background:var(--border);}
-.sec-title:first-child{margin-top:0;}
-
-.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);border:1.5px solid var(--border);margin-bottom:12px;overflow:hidden;}
-.field-row{display:grid;grid-template-columns:90px 1fr;align-items:center;padding:10px 15px;border-bottom:1px solid var(--border);gap:10px;}
-.field-row:last-child{border-bottom:none;}
-.field-label{font-size:0.74rem;color:var(--muted);font-weight:500;white-space:nowrap;}
-.field-val{font-size:0.86rem;color:var(--text);font-weight:600;text-align:right;}
-.field-val.gray{color:var(--muted);font-size:0.8rem;font-weight:400;}
-
-input.f,select.f,textarea.f{width:100%;border:1.5px solid var(--border);border-radius:var(--rad-sm);padding:7px 11px;font-size:0.84rem;font-family:inherit;color:var(--text);background:var(--bg);outline:none;transition:border 0.2s,box-shadow 0.2s;-webkit-appearance:none;}
-input.f:focus,select.f:focus,textarea.f:focus{border-color:var(--pink);box-shadow:0 0 0 3px rgba(232,130,154,0.12);background:#fff;}
-textarea.f{resize:none;height:66px;line-height:1.5;}
-select.f{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23b0868e' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;background-size:10px;padding-right:28px;}
-
-.calc-row{display:flex;align-items:center;justify-content:space-between;padding:10px 15px;background:var(--pink-lt);border-bottom:1px solid var(--border);}
-.calc-row:last-child{border-bottom:none;}
-.calc-label{font-size:0.74rem;color:var(--muted);}
-.calc-val{font-size:0.95rem;font-weight:700;color:var(--rose);}
-
-.btn-primary{display:block;width:100%;padding:13px;margin-top:14px;background:linear-gradient(135deg,var(--pink),var(--rose));color:#fff;border:none;border-radius:var(--radius);font-family:inherit;font-size:0.87rem;font-weight:700;letter-spacing:0.05em;cursor:pointer;transition:opacity 0.2s,transform 0.1s;box-shadow:0 4px 14px rgba(212,95,122,0.28);}
-.btn-primary:hover{opacity:0.92;}
-.btn-primary:active{transform:scale(0.98);}
-.btn-secondary{display:block;width:100%;padding:12px;margin-top:8px;background:#fff;color:var(--rose);border:1.5px solid var(--pink-md);border-radius:var(--radius);font-family:inherit;font-size:0.84rem;font-weight:700;cursor:pointer;transition:all 0.2s;}
-.btn-secondary:hover{background:var(--pink-lt);}
-.btn-ghost{background:none;border:1.5px solid var(--border);border-radius:var(--rad-sm);padding:6px 13px;font-size:0.74rem;font-family:inherit;color:var(--muted);cursor:pointer;transition:all 0.15s;}
-.btn-ghost:hover{border-color:var(--pink);color:var(--rose);}
-.btn-danger{background:none;border:none;color:#dbb0b6;font-size:0.77rem;cursor:pointer;padding:4px 7px;border-radius:6px;transition:all 0.15s;font-family:inherit;}
-.btn-danger:hover{color:var(--danger);background:#fdeaea;}
-.btn-teal{background:linear-gradient(135deg,#7ab8d4,#4a88b4);color:#fff;border:none;border-radius:var(--rad-sm);padding:10px;font-family:inherit;font-size:0.82rem;font-weight:700;cursor:pointer;width:100%;margin-top:8px;}
-
-.list-item{display:flex;align-items:center;justify-content:space-between;padding:11px 15px;border-bottom:1px solid var(--border);}
-.list-item:last-child{border-bottom:none;}
-.list-name{font-weight:700;font-size:0.88rem;}
-.list-meta{font-size:0.71rem;color:var(--muted);margin-top:2px;}
-.item-edit-btn{background:var(--pink-lt);border:none;color:var(--pink);font-size:0.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;font-family:inherit;transition:background 0.15s;}
-.item-edit-btn:hover{background:var(--peach);}
-.item-btn-teal{background:#eef4fb;border:none;color:#4a88b4;font-size:0.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;font-family:inherit;}
-
-/* Care steps editor */
-.step-item{display:flex;align-items:flex-start;gap:8px;padding:9px 13px;border-bottom:1px solid var(--border);background:#fff;}
-.step-item:last-child{border-bottom:none;}
-.step-drag{color:#ccc;font-size:1rem;line-height:1.8;cursor:grab;user-select:none;padding-top:0px;}
-.step-body{flex:1;}
-.step-body input{width:100%;border:1px solid var(--border);border-radius:7px;padding:6px 10px;font-size:0.82rem;font-family:inherit;color:var(--text);background:var(--bg);outline:none;}
-.step-body input:focus{border-color:var(--pink);background:#fff;}
-.step-tags{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap;}
-.step-tag{font-size:0.65rem;padding:2px 9px;border-radius:20px;cursor:pointer;border:1.5px solid var(--border);color:var(--muted);background:#fff;font-family:inherit;transition:all 0.15s;}
-.step-tag.am{border-color:#f0a500;background:#fff9e6;color:#9a6a00;}
-.step-tag.pm{border-color:#7aaad4;background:#eef4fb;color:#3a6fa0;}
-.step-tag.both{border-color:var(--pink);background:var(--pink-lt);color:var(--rose);}
-.step-del{background:none;border:none;color:#ccc;font-size:0.9rem;cursor:pointer;padding:3px 4px;transition:color 0.15s;align-self:center;line-height:1;}
-.step-del:hover{color:var(--danger);}
-.add-step-row{width:100%;padding:10px;border:none;border-top:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.78rem;font-family:inherit;cursor:pointer;transition:all 0.15s;}
-.add-step-row:hover{background:var(--pink-lt);color:var(--rose);}
-.tpl-btn{background:var(--pink-lt);border:1px solid var(--pink-md);border-radius:20px;padding:4px 10px;font-size:0.7rem;color:var(--rose);cursor:pointer;font-family:inherit;transition:all 0.15s;white-space:nowrap;}
-.tpl-btn:hover{background:var(--peach);}
-.step-desc{width:100%;border:1px solid var(--border);border-radius:7px;padding:5px 10px;font-size:0.78rem;font-family:inherit;color:var(--text);background:var(--bg);outline:none;resize:none;height:54px;line-height:1.5;margin-top:5px;}
-.step-desc:focus{border-color:var(--pink);background:#fff;}
-/* Pet grid for care page */
-.pet-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px;}
-.pet-grid-btn{background:var(--card);border:1.5px solid var(--border);border-radius:var(--rad-sm);padding:12px 14px;text-align:left;cursor:pointer;font-family:inherit;transition:all 0.15s;box-shadow:var(--shadow);}
-.pet-grid-btn.active{border-color:var(--rose);background:var(--pink-lt);}
-.pet-grid-btn:hover{border-color:var(--pink-md);}
-.pet-grid-name{font-weight:700;font-size:0.88rem;color:var(--text);}
-.pet-grid-steps{font-size:0.68rem;color:var(--muted);margin-top:2px;}
-/* sticky care header */
-.care-sticky-header{position:sticky;top:108px;z-index:100;background:var(--bg);padding:10px 0 6px;}
-/* export/import bar */
-.data-bar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
-.btn-export{background:var(--green-lt,#e8f5ee);border:1px solid var(--green);border-radius:var(--rad-sm);padding:7px 14px;font-size:0.76rem;font-family:inherit;color:#4a8a6a;cursor:pointer;font-weight:600;}
-.btn-import{background:#eef4fb;border:1px solid #7ab8d4;border-radius:var(--rad-sm);padding:7px 14px;font-size:0.76rem;font-family:inherit;color:#3a6fa0;cursor:pointer;font-weight:600;}
-
-/* Care checklist */
-.care-prog{background:var(--pink-lt);border-radius:var(--rad-sm);padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;}
-.care-prog-txt{font-size:0.78rem;color:var(--rose);font-weight:600;white-space:nowrap;}
-.care-bar-wrap{flex:1;height:6px;background:var(--peach);border-radius:3px;overflow:hidden;}
-.care-bar{height:100%;background:var(--rose);border-radius:3px;transition:width 0.3s;}
-.care-num{font-size:0.72rem;color:var(--muted);white-space:nowrap;}
-
-.check-item{display:flex;align-items:flex-start;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border);}
-.check-item:last-child{border-bottom:none;}
-.check-box{width:21px;height:21px;border:2px solid var(--pink-md);border-radius:6px;flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;margin-top:1px;transition:all 0.15s;}
-.check-box.checked{background:var(--rose);border-color:var(--rose);}
-.check-tick{display:none;color:#fff;font-size:0.75rem;font-weight:700;}
-.check-box.checked .check-tick{display:block;}
-.check-content{flex:1;}
-.check-label{font-size:0.84rem;line-height:1.5;transition:all 0.2s;}
-.check-item.done .check-label{text-decoration:line-through;color:var(--muted);}
-.time-chip{display:inline-block;font-size:0.63rem;padding:2px 7px;border-radius:20px;margin-top:4px;}
-.chip-am{background:#fff9e6;color:#9a6a00;border:1px solid #f0d070;}
-.chip-pm{background:#eef4fb;color:#3a6fa0;border:1px solid #aacce8;}
-.chip-both{background:var(--pink-lt);color:var(--rose);border:1px solid var(--pink-md);}
-
-/* Records */
-.filter-bar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
-.filter-bar label{font-size:0.72rem;color:var(--muted);white-space:nowrap;}
-.filter-sel{border:1.5px solid var(--border);border-radius:20px;padding:6px 26px 6px 13px;font-size:0.78rem;font-family:inherit;color:var(--text);background:var(--card);outline:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23b0868e' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center;}
-.op-summary{background:var(--card);border:1.5px solid var(--border);border-radius:var(--rad-sm);margin-bottom:12px;overflow:hidden;}
-.op-hdr{padding:8px 13px;background:var(--pink-lt);font-size:0.73rem;font-weight:700;color:var(--rose);letter-spacing:0.05em;}
-.op-row{display:flex;justify-content:space-between;align-items:center;padding:8px 13px;border-bottom:1px solid var(--border);font-size:0.77rem;}
-.op-row:last-child{border-bottom:none;}
-.op-name{font-weight:600;}
-.op-nums{display:flex;gap:10px;font-size:0.7rem;color:var(--muted);}
-.hi{color:var(--rose);font-weight:600;}
-.month-hdr{display:flex;align-items:center;justify-content:space-between;padding:8px 13px;background:linear-gradient(90deg,var(--pink-lt),var(--bg));border-radius:var(--rad-sm);margin:16px 0 7px;}
-.month-hdr:first-child{margin-top:0;}
-.month-label{font-size:0.8rem;font-weight:700;color:var(--rose);}
-.month-stats{font-size:0.69rem;color:var(--muted);}
-.rec-card{background:var(--card);border-radius:var(--rad-sm);border:1.5px solid var(--border);margin-bottom:7px;overflow:hidden;}
-.rec-hdr{display:flex;align-items:flex-start;justify-content:space-between;padding:11px 13px 9px;}
-.rec-title{font-weight:700;font-size:0.86rem;margin-bottom:2px;}
-.rec-meta{font-size:0.67rem;color:var(--muted);}
-.rec-amount{font-size:0.96rem;font-weight:700;color:var(--rose);font-family:'Playfair Display',serif;white-space:nowrap;text-align:right;}
-.rec-amount small{display:block;font-family:'Noto Sans TC',sans-serif;font-size:0.6rem;color:var(--muted);font-weight:400;}
-.rec-detail{padding:0 13px 11px;display:none;}
-.rec-detail.open{display:block;}
-.rec-dr{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:0.77rem;}
-.rec-dr:last-child{border-bottom:none;}
-.rec-dl{color:var(--muted);}
-.rec-dv{font-weight:600;}
-.rec-dv.paid{color:var(--green);}
-.rec-dv.unpaid{color:var(--danger);}
-.rec-expand-btn{display:block;width:100%;padding:6px;text-align:center;background:var(--pink-lt);border:none;border-top:1px solid var(--border);font-size:0.69rem;color:var(--muted);cursor:pointer;font-family:inherit;}
-.rec-expand-btn:hover{background:var(--peach);color:var(--rose);}
-
-.msg-preview{background:#f0f0f0;border-radius:10px;padding:13px 14px;font-size:0.8rem;line-height:1.8;white-space:pre-wrap;word-break:break-all;color:#333;margin-top:8px;border:1px solid #ddd;max-height:220px;overflow-y:auto;}
-
-.modal-bg{position:fixed;inset:0;background:rgba(60,30,35,0.35);backdrop-filter:blur(4px);z-index:500;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.25s;}
-.modal-bg.open{opacity:1;pointer-events:all;}
-.modal{background:#fff;border-radius:22px 22px 0 0;padding:22px 18px 40px;width:100%;max-width:560px;transform:translateY(60px);transition:transform 0.3s cubic-bezier(0.34,1.56,0.4,1);max-height:88vh;overflow-y:auto;}
-.modal-bg.open .modal{transform:translateY(0);}
-.modal-title{font-family:'Playfair Display',serif;font-size:1rem;color:var(--rose);margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;}
-.modal-close{background:none;border:none;font-size:1.2rem;color:var(--muted);cursor:pointer;}
-.form-row{margin-bottom:10px;}
-.form-row label{display:block;font-size:0.71rem;color:var(--muted);font-weight:600;margin-bottom:4px;letter-spacing:0.04em;}
-.form-actions{display:flex;gap:9px;margin-top:14px;}
-.btn-save-form{flex:1;padding:11px;background:linear-gradient(135deg,var(--pink),var(--rose));color:#fff;border:none;border-radius:var(--rad-sm);font-family:inherit;font-size:0.83rem;font-weight:700;cursor:pointer;}
-.btn-cancel-form{padding:11px 15px;background:none;border:1.5px solid var(--border);border-radius:var(--rad-sm);font-family:inherit;font-size:0.83rem;color:var(--muted);cursor:pointer;}
-
-@media(min-width:560px){.modal-bg{align-items:center;}.modal{border-radius:22px;max-height:82vh;}.modal>div:first-child{border-radius:22px 22px 0 0;}}
-.empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:0.83rem;}
-.empty .icon{font-size:2.2rem;margin-bottom:10px;}
-.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--rose);color:#fff;padding:10px 20px;border-radius:40px;font-size:0.81rem;font-weight:600;z-index:999;pointer-events:none;transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);white-space:nowrap;box-shadow:0 4px 20px rgba(212,95,122,0.35);}
-.toast.show{transform:translateX(-50%) translateY(0);}
-</style>
+<link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">🌿</div>
+    <div class="login-title">風滾草記帳本</div>
+    <div class="login-sub">請輸入密碼以繼續</div>
+    <input class="login-input" type="password" id="login-pw" placeholder="密碼" onkeydown="if(event.key==='Enter')checkLogin()">
+    <button class="login-btn" onclick="checkLogin()">進入</button>
+    <div class="login-err" id="login-err">密碼錯誤，請再試一次</div>
+  </div>
+</div>
 
 <header>
   <div class="header-inner">
@@ -250,6 +83,20 @@ select.f{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
     <div class="field-row"><span class="field-label">總天數</span><div class="field-val" id="s-days">—</div></div>
     <div class="field-row"><span class="field-label">單價 / 天</span><input type="number" class="f" id="s-price" placeholder="填入後顯示預覽" oninput="stayCalc()"></div>
   </div>
+  <div class="card">
+    <div class="field-row" style="grid-template-columns:1fr auto">
+      <label style="font-size:0.82rem;cursor:pointer;display:flex;align-items:center;gap:8px">
+        <input type="checkbox" id="s-special" onchange="stayCalc()" style="accent-color:var(--rose);width:16px;height:16px">
+        特殊照護 <span style="color:var(--muted);font-size:0.74rem">+$150 / 天</span>
+      </label>
+    </div>
+    <div class="field-row" style="grid-template-columns:1fr auto">
+      <label style="font-size:0.82rem;cursor:pointer;display:flex;align-items:center;gap:8px">
+        <input type="checkbox" id="s-distance" onchange="stayCalc()" style="accent-color:var(--rose);width:16px;height:16px">
+        遠距離加給 <span style="color:var(--muted);font-size:0.74rem">+$100 / 趟</span>
+      </label>
+    </div>
+  </div>
   <div id="s-result-card" style="display:none">
     <div class="card">
       <div class="calc-row"><span class="calc-label">總金額</span><span class="calc-val" id="s-total">$0</span></div>
@@ -301,6 +148,20 @@ select.f{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
     <div class="field-row"><span class="field-label">總次數</span><div class="field-val" id="v-times">—</div></div>
     <div class="field-row"><span class="field-label">單價 / 次</span><input type="number" class="f" id="v-price" placeholder="填入後顯示預覽" oninput="visitCalc()"></div>
   </div>
+  <div class="card">
+    <div class="field-row" style="grid-template-columns:1fr auto">
+      <label style="font-size:0.82rem;cursor:pointer;display:flex;align-items:center;gap:8px">
+        <input type="checkbox" id="v-special" onchange="visitCalc()" style="accent-color:var(--rose);width:16px;height:16px">
+        特殊照護 <span style="color:var(--muted);font-size:0.74rem">+$150 / 次</span>
+      </label>
+    </div>
+    <div class="field-row" style="grid-template-columns:1fr auto">
+      <label style="font-size:0.82rem;cursor:pointer;display:flex;align-items:center;gap:8px">
+        <input type="checkbox" id="v-distance" onchange="visitCalc()" style="accent-color:var(--rose);width:16px;height:16px">
+        遠距離加給 <span style="color:var(--muted);font-size:0.74rem">+$100 / 趟</span>
+      </label>
+    </div>
+  </div>
   <div id="v-result-card" style="display:none">
     <div class="card">
       <div class="calc-row"><span class="calc-label">總金額</span><span class="calc-val" id="v-total">$0</span></div>
@@ -340,6 +201,9 @@ select.f{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
   <div class="modal">
     <div class="modal-title"><span id="sitterModalTitle">新增保母</span><button class="modal-close" onclick="closeModal('sitterModal')">✕</button></div>
     <div class="form-row"><label>保母名稱 *</label><input class="f" id="sm-name" placeholder="例：小花"></div>
+    <div class="form-row"><label>銀行名稱</label><input class="f" id="sm-bank-name" placeholder="例：國泰世華"></div>
+    <div class="form-row"><label>銀行代碼</label><input class="f" id="sm-bank-code" placeholder="例：013"></div>
+    <div class="form-row"><label>帳戶號碼</label><input class="f" id="sm-bank-account" placeholder="例：129506141811"></div>
     <div class="form-row"><label>備註</label><textarea class="f" id="sm-note" placeholder="聯絡方式..."></textarea></div>
     <input type="hidden" id="sm-id">
     <div class="form-actions">
@@ -372,7 +236,6 @@ select.f{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 <!-- ══ Care Manual Modal ══ -->
 <div class="modal-bg" id="careModal" onclick="closeBg('careModal',event)">
   <div class="modal" style="padding:0;display:flex;flex-direction:column;max-height:88vh;">
-    <!-- 固定頂部：標題 + 模板 -->
     <div style="padding:22px 18px 0;flex-shrink:0;background:#fff;border-radius:22px 22px 0 0;z-index:10;">
       <div class="modal-title"><span id="careModalTitle">照護手冊</span><button class="modal-close" onclick="closeModal('careModal')">✕</button></div>
       <p style="font-size:0.73rem;color:var(--muted);margin-bottom:10px;line-height:1.6">拖曳 ☰ 調整順序 · 點標籤選 早上 / 晚上 / 早晚</p>
@@ -399,14 +262,12 @@ select.f{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         </div>
       </div>
     </div>
-    <!-- 可捲動的步驟區 -->
     <div style="flex:1;overflow-y:auto;padding:0 18px;">
       <div class="card" style="margin:12px 0 0;border-radius:var(--radius) var(--radius) 0 0">
         <div id="careStepList"></div>
         <button class="add-step-row" onclick="addStep()">＋ 自訂步驟</button>
       </div>
     </div>
-    <!-- 固定底部：按鈕 -->
     <div style="padding:14px 18px 32px;flex-shrink:0;background:#fff;border-top:1px solid var(--border);">
       <input type="hidden" id="care-pet-id">
       <div class="form-actions" style="margin-top:0">
@@ -419,710 +280,16 @@ select.f{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 
 <div class="toast" id="toast"></div>
 
-<!-- Firebase SDK -->
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+<!-- Firebase (module) -->
+<script type="module" src="js/firebase.js"></script>
 
-const firebaseConfig = {
-  apiKey: "AIzaSyA1cKMJr3yCe5y6vNGtoM9HfX2xDUsUVBQ",
-  authDomain: "tumblweed-7c629.firebaseapp.com",
-  databaseURL: "https://tumblweed-7c629-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "tumblweed-7c629",
-  storageBucket: "tumblweed-7c629.firebasestorage.app",
-  messagingSenderId: "794571028684",
-  appId: "1:794571028684:web:300b1b282ce34bcbd8ea69"
-};
+<!-- App scripts (載入順序重要) -->
+<script src="js/app.js"></script>
+<script src="js/sitters.js"></script>
+<script src="js/pets.js"></script>
+<script src="js/care.js"></script>
+<script src="js/messages.js"></script>
+<script src="js/records.js"></script>
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-
-// 把 db、ref、set、onValue 掛到 window 讓後面的 script 使用
-window._db = db;
-window._ref = ref;
-window._set = set;
-window._onValue = onValue;
-window._dbReady = true;
-</script>
-
-<script>
-// ══ State ══
-let sitters=[], pets=[], records=[];
-let careSteps=[];
-let dragSrcEl=null;
-let _saveTimer=null;
-
-// ══ Boot ══
-window.onload=()=>{
-  // 等 Firebase 模組載入
-  const waitForDB=setInterval(()=>{
-    if(!window._dbReady) return;
-    clearInterval(waitForDB);
-    initApp();
-  },100);
-};
-
-function initApp(){
-  setupDateListeners();
-  // 即時監聽 Firebase 資料變化
-  const db=window._db, r=window._ref, ov=window._onValue;
-  ov(r(db,'sitters'),(snap)=>{ sitters=snap.val()||[]; renderSitterList(); populateOpSelect(); populatePetSelects(); renderCarePetGrid(); });
-  ov(r(db,'pets'),(snap)=>{ pets=snap.val()||[]; renderPetList(); populatePetSelects(); renderCarePetGrid(); });
-  ov(r(db,'records'),(snap)=>{ records=snap.val()||[]; updateMonthFilter(); renderRecords(); });
-
-  setDateDefaults();
-}
-
-function setDateDefaults(){
-  const t=todayStr();
-  ['s-ci-date','s-co-date','v-start','v-end'].forEach(id=>{
-    const el=document.getElementById(id); if(el&&!el.value) el.value=t;
-  });
-  const ciT=document.getElementById('s-ci-time');
-  const coT=document.getElementById('s-co-time');
-  if(ciT&&!ciT.value) ciT.value='07:00';
-  if(coT&&!coT.value) coT.value='07:00';
-}
-
-function setupDateListeners(){
-  document.getElementById('s-ci-date').addEventListener('change',function(){
-    const co=document.getElementById('s-co-date');
-    if(!co.dataset.manual) co.value=this.value;
-    stayCalc();
-  });
-  document.getElementById('s-co-date').addEventListener('change',function(){this.dataset.manual='1';stayCalc();});
-  document.getElementById('s-ci-time').addEventListener('change',stayCalc);
-  document.getElementById('s-co-time').addEventListener('change',stayCalc);
-  document.getElementById('v-end').addEventListener('change',function(){this.dataset.manual='1';visitCalc();});
-}
-
-const todayStr=()=>new Date().toISOString().slice(0,10);
-const makeId=()=>Date.now()+'_'+Math.random().toString(36).slice(2);
-const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-const fmt=n=>'$'+Math.round(n).toLocaleString();
-const getOp=()=>document.getElementById('operatorSel').value||'未知';
-
-// ══ Firebase 儲存（防抖，避免太頻繁寫入）══
-function saveData(){
-  if(!window._dbReady) return;
-  clearTimeout(_saveTimer);
-  _saveTimer=setTimeout(()=>{
-    const db=window._db, r=window._ref, s=window._set;
-    s(r(db,'sitters'), sitters.length?sitters:[]);
-    s(r(db,'pets'),    pets.length?pets:[]);
-    s(r(db,'records'), records.length?records:[]);
-  },400);
-}
-
-// ══ Tabs ══
-function switchTab(tab){
-  ['sitters','pets','care','stay','visit','records'].forEach(t=>{
-    document.getElementById('page-'+t).classList.toggle('active',t===tab);
-    document.getElementById('tab-'+t).classList.toggle('active',t===tab);
-  });
-  if(['stay','visit','care'].includes(tab)) populatePetSelects();
-  if(tab==='care') renderCarePetGrid();
-  if(tab==='records'){updateMonthFilter();renderRecords();}
-}
-function renderAll(){
-  renderSitterList();populateOpSelect();
-  renderPetList();populatePetSelects();
-  renderCarePetGrid();
-  updateMonthFilter();renderRecords();
-}
-
-// ══ Sitters ══
-function renderSitterList(){
-  const el=document.getElementById('sitterList');
-  if(!sitters.length){el.innerHTML='<div class="empty"><div class="icon">👤</div>尚未新增保母</div>';return;}
-  el.innerHTML=sitters.map(s=>`
-    <div class="list-item">
-      <div><div class="list-name">${esc(s.name)}</div>${s.note?`<div class="list-meta">${esc(s.note)}</div>`:''}</div>
-      <div style="display:flex;gap:6px">
-        <button class="item-edit-btn" onclick="openSitterModal('${s.id}')">編輯</button>
-        <button class="btn-danger" onclick="deleteSitter('${s.id}')">刪除</button>
-      </div>
-    </div>`).join('');
-}
-function populateOpSelect(){
-  const sel=document.getElementById('operatorSel'),cur=sel.value;
-  sel.innerHTML='<option value="">— 選擇 —</option>'+sitters.map(s=>`<option value="${esc(s.name)}" ${s.name===cur?'selected':''}>${esc(s.name)}</option>`).join('');
-}
-function openSitterModal(editId){
-  document.getElementById('sm-id').value=editId||'';
-  if(editId){
-    const s=sitters.find(x=>x.id===editId);if(!s)return;
-    document.getElementById('sitterModalTitle').textContent='編輯保母';
-    document.getElementById('sm-name').value=s.name||'';
-    document.getElementById('sm-note').value=s.note||'';
-    document.getElementById('sm-del').innerHTML=`<button class="btn-danger" onclick="deleteSitter('${editId}');closeModal('sitterModal')">🗑 刪除保母</button>`;
-  }else{
-    document.getElementById('sitterModalTitle').textContent='新增保母';
-    ['sm-name','sm-note'].forEach(id=>document.getElementById(id).value='');
-    document.getElementById('sm-del').innerHTML='';
-  }
-  openModal('sitterModal');
-}
-function saveSitter(){
-  const name=document.getElementById('sm-name').value.trim();
-  if(!name){toast('⚠️ 請輸入保母名稱');return;}
-  const editId=document.getElementById('sm-id').value;
-  const data={name,note:document.getElementById('sm-note').value.trim()};
-  if(editId){const i=sitters.findIndex(x=>x.id===editId);if(i>-1)sitters[i]={...sitters[i],...data};}
-  else sitters.push({id:makeId(),...data});
-  saveData();renderSitterList();populateOpSelect();closeModal('sitterModal');toast('✅ 保母資料已儲存');
-}
-function deleteSitter(id){
-  if(!confirm('確定刪除？'))return;
-  sitters=sitters.filter(s=>s.id!==id);
-  saveData();renderSitterList();populateOpSelect();
-}
-
-// ══ Pets ══
-function renderPetList(){
-  const el=document.getElementById('petList');
-  if(!pets.length){el.innerHTML='<div class="empty"><div class="icon">🐾</div>尚未新增寵物</div>';return;}
-  el.innerHTML=pets.map(p=>`
-    <div class="list-item">
-      <div style="flex:1;min-width:0">
-        <div class="list-name">${esc(p.name)}</div>
-        <div class="list-meta">住宿 ${p.stayPrice?fmt(p.stayPrice)+'/天':'未設定'} · 到府 ${p.visitPrice?fmt(p.visitPrice)+'/次':'未設定'} · 抽成 ${p.pct?Math.round(p.pct*100)+'%':'—'}</div>
-      </div>
-      <div style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;margin-left:8px">
-        <button class="item-btn-teal" onclick="openCareModal('${p.id}')">📋 照護手冊</button>
-        <button class="item-edit-btn" onclick="openPetModal('${p.id}')">編輯</button>
-        <button class="btn-danger" onclick="deletePet('${p.id}')">刪除</button>
-      </div>
-    </div>`).join('');
-}
-function populatePetSelects(){
-  ['s-pet','v-pet','care-pet-sel'].forEach(id=>{
-    const sel=document.getElementById(id);if(!sel)return;
-    const cur=sel.value;
-    sel.innerHTML='<option value="">— 請選擇寵物 —</option>'+pets.map(p=>`<option value="${p.id}" ${p.id===cur?'selected':''}>${esc(p.name)}</option>`).join('');
-  });
-}
-function openPetModal(editId){
-  document.getElementById('pm-id').value=editId||'';
-  if(editId){
-    const p=pets.find(x=>x.id===editId);if(!p)return;
-    document.getElementById('petModalTitle').textContent='編輯寵物';
-    document.getElementById('pm-name').value=p.name||'';
-    document.getElementById('pm-stay-price').value=p.stayPrice||'';
-    document.getElementById('pm-visit-price').value=p.visitPrice||'';
-    document.getElementById('pm-pct').value=p.pct||'';
-    document.getElementById('pm-note').value=p.note||'';
-    document.getElementById('pm-del').innerHTML=`<button class="btn-danger" onclick="deletePet('${editId}');closeModal('petModal')">🗑 刪除寵物</button>`;
-  }else{
-    document.getElementById('petModalTitle').textContent='新增寵物';
-    ['pm-name','pm-stay-price','pm-visit-price','pm-pct','pm-note'].forEach(id=>document.getElementById(id).value='');
-    document.getElementById('pm-del').innerHTML='';
-  }
-  openModal('petModal');
-}
-function savePet(goToCare){
-  const name=document.getElementById('pm-name').value.trim();
-  if(!name){toast('⚠️ 請輸入寵物名稱');return;}
-  const editId=document.getElementById('pm-id').value;
-  const data={name,stayPrice:parseFloat(document.getElementById('pm-stay-price').value)||0,visitPrice:parseFloat(document.getElementById('pm-visit-price').value)||0,pct:parseFloat(document.getElementById('pm-pct').value)||0.8,note:document.getElementById('pm-note').value.trim()};
-  let petId=editId;
-  if(editId){const i=pets.findIndex(x=>x.id===editId);if(i>-1)pets[i]={...pets[i],...data};}
-  else{const np={id:makeId(),...data,careSteps:[]};pets.push(np);petId=np.id;}
-  saveData();renderPetList();populatePetSelects();closeModal('petModal');
-  if(goToCare&&petId){setTimeout(()=>openCareModal(petId),200);}
-  else toast('✅ 寵物資料已儲存');
-}
-function deletePet(id){
-  if(!confirm('確定刪除？'))return;
-  pets=pets.filter(p=>p.id!==id);
-  saveData();renderPetList();populatePetSelects();
-}
-
-// ══ Care Manual ══
-function openCareModal(petId){
-  const pet=pets.find(p=>p.id===petId);if(!pet)return;
-  document.getElementById('care-pet-id').value=petId;
-  document.getElementById('careModalTitle').textContent=pet.name+' 照護手冊';
-  careSteps=JSON.parse(JSON.stringify(pet.careSteps||[]));
-  renderStepEditor();
-  openModal('careModal');
-}
-function renderStepEditor(){
-  const list=document.getElementById('careStepList');
-  if(!careSteps.length){list.innerHTML='<div style="padding:16px;text-align:center;color:var(--muted);font-size:0.8rem">點上方模板或「自訂步驟」新增</div>';return;}
-  list.innerHTML=careSteps.map((s,i)=>`
-    <div class="step-item" draggable="true" data-idx="${i}"
-      ondragstart="dStart(event,${i})" ondragover="dOver(event)" ondrop="dDrop(event,${i})" ondragend="dEnd()">
-      <span class="step-drag">☰</span>
-      <div class="step-body">
-        <input value="${esc(s.text)}" placeholder="大標（步驟名稱）" oninput="careSteps[${i}].text=this.value">
-        <textarea class="step-desc" placeholder="說明（細項內容）" oninput="careSteps[${i}].desc=this.value">${esc(s.desc||'')}</textarea>
-        <div class="step-tags">
-          <button class="step-tag ${s.time==='AM'?'am':''}" onclick="setStepTime(${i},'AM')">☀️ 早上</button>
-          <button class="step-tag ${s.time==='PM'?'pm':''}" onclick="setStepTime(${i},'PM')">🌙 晚上</button>
-          <button class="step-tag ${s.time==='BOTH'?'both':''}" onclick="setStepTime(${i},'BOTH')">早晚</button>
-          <button class="step-tag ${!s.time||s.time==='NONE'?'both':''}" style="${!s.time||s.time==='NONE'?'border-color:var(--muted);background:#f5f5f5;color:var(--muted)':''}" onclick="setStepTime(${i},'NONE')">不指定</button>
-        </div>
-      </div>
-      <button class="step-del" onclick="removeStep(${i})">✕</button>
-    </div>`).join('');
-}
-function addStep(){careSteps.push({id:makeId(),text:'',desc:'',time:'BOTH'});renderStepEditor();}
-function addTplStep(title,desc){careSteps.push({id:makeId(),text:title,desc:desc,time:'BOTH'});renderStepEditor();}
-function removeStep(i){careSteps.splice(i,1);renderStepEditor();}
-function setStepTime(i,t){careSteps[i].time=t;renderStepEditor();}
-function saveCareManual(){
-  const petId=document.getElementById('care-pet-id').value;
-  const pet=pets.find(p=>p.id===petId);if(!pet)return;
-  pet.careSteps=JSON.parse(JSON.stringify(careSteps));
-  saveData();closeModal('careModal');toast('✅ 照護手冊已儲存');
-}
-// drag
-function dStart(e,i){dragSrcEl=i;e.dataTransfer.effectAllowed='move';}
-function dOver(e){e.preventDefault();e.dataTransfer.dropEffect='move';}
-function dDrop(e,i){
-  e.preventDefault();
-  if(dragSrcEl===null||dragSrcEl===i)return;
-  const moved=careSteps.splice(dragSrcEl,1)[0];
-  careSteps.splice(i,0,moved);
-  dragSrcEl=null;renderStepEditor();
-}
-function dEnd(){dragSrcEl=null;}
-
-// ══ Care / 備忘 ══
-let checkState={};
-let activeCareId=null;
-
-function renderCarePetGrid(){
-  const grid=document.getElementById('care-pet-grid');
-  if(!grid)return;
-  const hasCare=pets.filter(p=>p.careSteps&&p.careSteps.length);
-  if(!hasCare.length){
-    grid.innerHTML='<div class="empty"><div class="icon">📝</div>尚未建立任何照護手冊<br><small>請至寵物頁面點「照護手冊」按鈕建立</small></div>';
-    document.getElementById('care-checklist-wrap').innerHTML='';
-    return;
-  }
-  grid.innerHTML=`<div class="pet-grid">${hasCare.map(p=>`
-    <button class="pet-grid-btn ${activeCareId===p.id?'active':''}" onclick="toggleCareAccordion('${p.id}')">
-      <div class="pet-grid-name">🐾 ${esc(p.name)}</div>
-      <div class="pet-grid-steps">${p.careSteps.length} 個步驟</div>
-    </button>`).join('')}</div>`;
-}
-
-function toggleCareAccordion(petId){
-  if(activeCareId===petId){
-    activeCareId=null;
-    document.getElementById('care-checklist-wrap').innerHTML='';
-  }else{
-    activeCareId=petId;
-    const pet=pets.find(p=>p.id===petId);
-    if(!pet)return;
-    checkState={};
-    pet.careSteps.forEach(s=>checkState[s.id]=false);
-    renderChecklistNew(pet);
-  }
-  renderCarePetGrid();
-}
-
-function renderChecklistNew(pet){
-  const steps=pet.careSteps;
-  const total=steps.length;
-  const done=Object.values(checkState).filter(Boolean).length;
-  const pct=total?Math.round(done/total*100):0;
-  const chipMap={
-    AM:'<span class="time-chip chip-am">☀️ 早上</span>',
-    PM:'<span class="time-chip chip-pm">🌙 晚上</span>',
-    BOTH:'<span class="time-chip chip-both">早晚</span>',
-    NONE:'',''  :''
-  };
-  const wrap=document.getElementById('care-checklist-wrap');
-  wrap.innerHTML=`
-    <div style="margin-top:12px">
-      <div class="care-prog">
-        <span class="care-prog-txt">${done}/${total} 完成</span>
-        <div class="care-bar-wrap"><div class="care-bar" style="width:${pct}%"></div></div>
-        <span class="care-num">${pct}%</span>
-      </div>
-      <div class="card">
-        ${steps.map(s=>`
-          <div class="check-item ${checkState[s.id]?'done':''}" id="ci-${s.id}">
-            <div class="check-box ${checkState[s.id]?'checked':''}" onclick="toggleCheck('${pet.id}','${s.id}')">
-              <span class="check-tick">✓</span>
-            </div>
-            <div class="check-content">
-              <div class="check-label">${esc(s.text)}</div>
-              ${s.desc?`<div style="font-size:0.76rem;color:var(--muted);margin-top:3px;white-space:pre-wrap">${esc(s.desc)}</div>`:''}
-              ${chipMap[s.time||'']||''}
-            </div>
-          </div>`).join('')}
-      </div>
-      <button class="btn-primary" style="background:linear-gradient(135deg,#7ab89a,#4a9a7a)" onclick="resetChecklistNew('${pet.id}')">↺ 重置清單</button>
-    </div>`;
-}
-
-function toggleCheck(petId,stepId){
-  checkState[stepId]=!checkState[stepId];
-  const pet=pets.find(p=>p.id===petId);if(pet) renderChecklistNew(pet);
-}
-function resetChecklistNew(petId){
-  const pet=pets.find(p=>p.id===petId);if(!pet)return;
-  pet.careSteps.forEach(s=>checkState[s.id]=false);
-  renderChecklistNew(pet);
-}
-
-// ══ Export / Import ══
-function exportData(){
-  const data={sitters,pets,records,exportedAt:new Date().toLocaleString('zh-TW')};
-  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download='風滾草記帳本_'+todayStr()+'.json';a.click();
-  toast('✅ 資料已匯出！');
-}
-function importData(e){
-  const file=e.target.files[0];if(!file)return;
-  const reader=new FileReader();
-  reader.onload=ev=>{
-    try{
-      const d=JSON.parse(ev.target.result);
-      if(!confirm('確定匯入？現有資料將被覆蓋。'))return;
-      sitters=d.sitters||[];pets=d.pets||[];records=d.records||[];
-      saveData();renderAll();toast('✅ 資料已匯入！');
-    }catch(err){toast('⚠️ 檔案格式錯誤');}
-  };
-  reader.readAsText(file);
-  e.target.value='';
-}
-
-// ══ Stay Calc ══
-function onStayPetChange(){
-  const pet=pets.find(p=>p.id===document.getElementById('s-pet').value);
-  if(pet&&pet.stayPrice) document.getElementById('s-price').value=pet.stayPrice;
-  stayCalc();
-}
-function stayCalc(){
-  const ciDate=document.getElementById('s-ci-date').value;
-  const ciTime=document.getElementById('s-ci-time').value;
-  const coDate=document.getElementById('s-co-date').value;
-  const coTime=document.getElementById('s-co-time').value;
-  const price=parseFloat(document.getElementById('s-price').value)||0;
-  let days='',extraLabel='',total=0;
-  if(ciDate&&coDate){
-    let diff=(new Date(coDate)-new Date(ciDate))/86400000;
-    if(diff<0)diff=0;
-    let extra=0;
-    if(ciTime&&coTime){
-      const ciH=parseInt(ciTime),coH=parseInt(coTime);
-      extra=Math.abs(coH-ciH)<12?0.5:1;
-      extraLabel=extra===0.5?'是 (½ 天)':'否';
-    }
-    days=diff===0?1:(extra>0?diff+extra:diff);
-    days=days%1===0?days:parseFloat(days.toFixed(1));
-    total=price*(Math.round(days*2)/2);
-  }
-  document.getElementById('s-extra').textContent=extraLabel||'—';
-  document.getElementById('s-days').textContent=days!==''?days+' 天':'—';
-  const rc=document.getElementById('s-result-card');
-  const scb=document.getElementById('s-save-copy-btn');
-  if(price>0&&days!==''){
-    document.getElementById('s-total').textContent=fmt(total);
-    const petId=document.getElementById('s-pet').value;
-    const pet=pets.find(p=>p.id===petId);
-    if(pet&&ciDate&&coDate){
-      const msg=buildStayMsg({petName:pet.name,ciDate,ciTime,coDate,coTime,days,price,total});
-      document.getElementById('s-msg-preview').textContent=msg;
-      rc.style.display='block';scb.style.display='block';
-    }
-  }else{rc.style.display='none';scb.style.display='none';}
-  return{days,total};
-}
-
-// ══ Visit Calc ══
-function onVisitPetChange(){
-  const pet=pets.find(p=>p.id===document.getElementById('v-pet').value);
-  if(pet&&pet.visitPrice) document.getElementById('v-price').value=pet.visitPrice;
-  visitCalc();
-}
-function onVisitStartChange(){
-  const end=document.getElementById('v-end');
-  if(!end.dataset.manual) end.value=document.getElementById('v-start').value;
-  visitCalc();
-}
-function visitCalc(){
-  const start=document.getElementById('v-start').value;
-  const end=document.getElementById('v-end').value;
-  const sAMPM=document.getElementById('v-start-ampm').value;
-  const eAMPM=document.getElementById('v-end-ampm').value;
-  const tpd=parseInt(document.getElementById('v-times-day').value)||1;
-  const price=parseFloat(document.getElementById('v-price').value)||0;
-  let times='',total=0;
-  if(start&&end){
-    const dayDiff=Math.floor((new Date(end)-new Date(start))/86400000)+1;
-    let t=dayDiff*tpd;
-    if(sAMPM==='PM')t-=tpd/2;
-    if(eAMPM==='AM')t-=tpd/2;
-    times=Math.max(0,Math.ceil(t));
-    total=price*times;
-  }
-  document.getElementById('v-times').textContent=times!==''?times+' 次':'—';
-  const rc=document.getElementById('v-result-card');
-  const scb=document.getElementById('v-save-copy-btn');
-  if(price>0&&times!==''){
-    document.getElementById('v-total').textContent=fmt(total);
-    const petId=document.getElementById('v-pet').value;
-    const pet=pets.find(p=>p.id===petId);
-    if(pet&&start&&end){
-      const msg=buildVisitMsg({petName:pet.name,start,end,sAMPM,eAMPM,tpd,times,price,total});
-      document.getElementById('v-msg-preview').textContent=msg;
-      rc.style.display='block';scb.style.display='block';
-    }
-  }else{rc.style.display='none';scb.style.display='none';}
-  return{times,total};
-}
-
-// ══ LINE Message Builders ══
-function fmtD(d){if(!d)return'';const p=d.split('-');return parseInt(p[1])+'/'+parseInt(p[2]);}
-function buildStayMsg(r){
-  const ci=fmtD(r.ciDate)+(r.ciTime?' '+r.ciTime.slice(0,5):'');
-  const co=fmtD(r.coDate)+(r.coTime?' '+r.coTime.slice(0,5):'');
-  const isAnChin=r.ciDate===r.coDate;
-  const typeLabel=isAnChin?'安親':'住宿';
-  const lines=[
-    r.petName,
-    '時段 - '+ci+' ~ '+co,
-    '',
-    typeLabel+'金額為 '+r.price+'$ / 天',
-    (!isAnChin&&r.days%1===0.5)?'含半天':null,
-    '共 '+r.days+' 天',
-    '',
-    r.price+' * '+r.days+' = '+Math.round(r.total),
-    '',
-    '以上金額確認無誤後再付款！🙇',
-    '謝謝🌸',
-    '',
-    '———',
-    '',
-    '可以Line pay 或者是匯款',
-    '國泰 013-129506141811',
-    '',
-    '再麻煩了🙇'
-  ];
-  return lines.filter(l=>l!==null).join('\n');
-}
-function buildVisitMsg(r){
-  const sLabel=fmtD(r.start)+' '+(r.sAMPM==='AM'?'早上':'晚上');
-  const eLabel=fmtD(r.end)+' '+(r.eAMPM==='AM'?'早上':'晚上');
-  const lines=[
-    r.petName,
-    '時段 - '+sLabel+' ~ '+eLabel,
-    '',
-    '到府金額為 '+r.price+'$ / 次',
-    r.tpd>1?'一天 '+r.tpd+' 次':null,
-    '共 '+r.times+' 次',
-    '',
-    r.price+' * '+r.times+' = '+Math.round(r.total),
-    '',
-    '以上金額確認無誤後再付款！🙇',
-    '謝謝🌸',
-    '',
-    '———',
-    '',
-    '可以Line pay 或者是匯款',
-    '國泰 013-129506141811',
-    '',
-    '再麻煩了🙇'
-  ];
-  return lines.filter(l=>l!==null).join('\n');
-}
-function copyMsg(type){
-  const el=document.getElementById(type==='stay'?'s-msg-preview':'v-msg-preview');
-  const text=el.textContent;
-  navigator.clipboard.writeText(text).then(()=>toast('✅ 訊息已複製！')).catch(()=>{
-    const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('✅ 訊息已複製！');
-  });
-}
-
-// ══ Submit Stay ══
-function buildStayRec(){
-  const petId=document.getElementById('s-pet').value;
-  if(!petId){toast('⚠️ 請選擇寵物');return null;}
-  if(!getOp()||getOp()==='未知'){toast('⚠️ 請先選擇輸入者');return null;}
-  const ciDate=document.getElementById('s-ci-date').value;
-  const coDate=document.getElementById('s-co-date').value;
-  if(!ciDate||!coDate){toast('⚠️ 請填寫日期');return null;}
-  const price=parseFloat(document.getElementById('s-price').value)||0;
-  if(!price){toast('⚠️ 請填寫單價');return null;}
-  const pet=pets.find(p=>p.id===petId);
-  const{days,total}=stayCalc();
-  const pct=pet?.pct||0.8;
-  const ciTime=document.getElementById('s-ci-time').value;
-  const coTime=document.getElementById('s-co-time').value;
-  return{id:makeId(),type:'stay',petId,petName:pet?.name||'',operator:getOp(),date:ciDate,ciDate,ciTime,coDate,coTime,days,price,pct,total:Math.round(total),net:Math.round(total*pct),commission:Math.round(total*(1-pct)),note:document.getElementById('s-note').value.trim(),paid:false,createdAt:new Date().toLocaleString('zh-TW')};
-}
-function resetStay(){
-  document.getElementById('s-pet').value='';
-  const t=todayStr();
-  const ci=document.getElementById('s-ci-date'),co=document.getElementById('s-co-date');
-  ci.value=t;co.value=t;delete co.dataset.manual;
-  document.getElementById('s-ci-time').value='07:00';
-  document.getElementById('s-co-time').value='07:00';
-  ['s-price','s-note'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('s-result-card').style.display='none';
-  document.getElementById('s-save-copy-btn').style.display='none';
-}
-function submitStay(){const r=buildStayRec();if(!r)return;records.unshift(r);saveData();updateMonthFilter();resetStay();toast('✅ 住宿紀錄已儲存');}
-function submitStayAndCopy(){const r=buildStayRec();if(!r)return;copyMsg('stay');records.unshift(r);saveData();updateMonthFilter();resetStay();toast('✅ 已儲存並複製訊息！');}
-
-// ══ Submit Visit ══
-function buildVisitRec(){
-  const petId=document.getElementById('v-pet').value;
-  if(!petId){toast('⚠️ 請選擇寵物');return null;}
-  if(!getOp()||getOp()==='未知'){toast('⚠️ 請先選擇輸入者');return null;}
-  const start=document.getElementById('v-start').value,end=document.getElementById('v-end').value;
-  if(!start||!end){toast('⚠️ 請填寫日期');return null;}
-  const price=parseFloat(document.getElementById('v-price').value)||0;
-  if(!price){toast('⚠️ 請填寫單價');return null;}
-  const pet=pets.find(p=>p.id===petId);
-  const{times,total}=visitCalc();
-  const pct=pet?.pct||0.8;
-  const sAMPM=document.getElementById('v-start-ampm').value;
-  const eAMPM=document.getElementById('v-end-ampm').value;
-  const tpd=parseInt(document.getElementById('v-times-day').value)||1;
-  return{id:makeId(),type:'visit',petId,petName:pet?.name||'',operator:getOp(),date:start,start,startAMPM:sAMPM,end,endAMPM:eAMPM,timesDay:tpd,times,price,pct,total:Math.round(total),net:Math.round(total*pct),commission:Math.round(total*(1-pct)),note:document.getElementById('v-note').value.trim(),paid:false,createdAt:new Date().toLocaleString('zh-TW')};
-}
-function resetVisit(){
-  document.getElementById('v-pet').value='';
-  const t=todayStr();
-  const vs=document.getElementById('v-start'),ve=document.getElementById('v-end');
-  vs.value=t;ve.value=t;delete ve.dataset.manual;
-  ['v-price','v-note'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('v-times-day').value='2';
-  document.getElementById('v-start-ampm').value='AM';
-  document.getElementById('v-end-ampm').value='PM';
-  document.getElementById('v-result-card').style.display='none';
-  document.getElementById('v-save-copy-btn').style.display='none';
-}
-function submitVisit(){const r=buildVisitRec();if(!r)return;records.unshift(r);saveData();updateMonthFilter();resetVisit();toast('✅ 到府紀錄已儲存');}
-function submitVisitAndCopy(){const r=buildVisitRec();if(!r)return;copyMsg('visit');records.unshift(r);saveData();updateMonthFilter();resetVisit();toast('✅ 已儲存並複製訊息！');}
-
-// ══ Records ══
-function updateMonthFilter(){
-  const sel=document.getElementById('monthFilter'),cur=sel.value;
-  const months=[...new Set(records.map(r=>r.date?r.date.slice(0,7):null).filter(Boolean))].sort().reverse();
-  sel.innerHTML='<option value="">全部月份</option>'+months.map(m=>`<option value="${m}" ${m===cur?'selected':''}>${m.replace('-','年')}月</option>`).join('');
-}
-function toggleRecDetail(id){
-  const el=document.getElementById('rd-'+id),btn=document.getElementById('rb-'+id);
-  const open=el.classList.toggle('open');
-  btn.textContent=open?'▾ 收起':'▸ 展開';
-}
-function togglePaid(id){
-  const r=records.find(x=>x.id===id);if(!r)return;
-  r.paid=!r.paid;saveData();renderRecords();
-}
-function deleteRecord(id){
-  if(!confirm('確定刪除？'))return;
-  records=records.filter(r=>r.id!==id);
-  saveData();updateMonthFilter();renderRecords();
-}
-function updateRecPct(id,val){
-  const r=records.find(x=>x.id===id);if(!r)return;
-  const pct=parseFloat(val)||0;
-  r.pct=pct;
-  r.net=Math.round(r.total*pct);
-  r.commission=Math.round(r.total*(1-pct));
-  saveData();renderRecords();
-}
-function copyRecMsg(id){
-  const r=records.find(x=>x.id===id);if(!r)return;
-  const msg=r.type==='stay'
-    ?buildStayMsg({petName:r.petName,ciDate:r.ciDate,ciTime:r.ciTime,coDate:r.coDate,coTime:r.coTime,days:r.days,price:r.price,total:r.total})
-    :buildVisitMsg({petName:r.petName,start:r.start,end:r.end,sAMPM:r.startAMPM,eAMPM:r.endAMPM,tpd:r.timesDay,times:r.times,price:r.price,total:r.total});
-  navigator.clipboard.writeText(msg).then(()=>toast('✅ 訊息已複製！')).catch(()=>{
-    const ta=document.createElement('textarea');ta.value=msg;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('✅ 訊息已複製！');
-  });
-}
-function renderRecords(){
-  const fm=document.getElementById('monthFilter').value;
-  const filtered=fm?records.filter(r=>r.date&&r.date.startsWith(fm)):records;
-
-  // operator summary
-  const opMap={};
-  filtered.forEach(r=>{
-    const op=r.operator||'未知';
-    if(!opMap[op])opMap[op]={total:0,net:0,commission:0,count:0};
-    opMap[op].total+=r.total||0;opMap[op].net+=r.net||0;opMap[op].commission+=r.commission||0;opMap[op].count++;
-  });
-  const opEl=document.getElementById('opSummary');
-  if(Object.keys(opMap).length){
-    opEl.innerHTML=`<div class="op-summary"><div class="op-hdr">各保母統計</div>${Object.entries(opMap).map(([op,s])=>`
-      <div class="op-row">
-        <span class="op-name">${esc(op)} <small style="font-weight:400;color:var(--muted)">(${s.count}筆)</small></span>
-        <div class="op-nums">
-          <span>總 <span class="hi">${fmt(s.total)}</span></span>
-          <span>實拿 <span class="hi">${fmt(s.net)}</span></span>
-          <span>抽成 ${fmt(s.commission)}</span>
-        </div>
-      </div>`).join('')}</div>`;
-  }else opEl.innerHTML='';
-
-  const listEl=document.getElementById('recordsList');
-  if(!filtered.length){listEl.innerHTML='<div class="empty"><div class="icon">📋</div>尚無紀錄</div>';return;}
-
-  const grouped={};
-  filtered.forEach(r=>{const m=r.date?r.date.slice(0,7):'未知';if(!grouped[m])grouped[m]=[];grouped[m].push(r);});
-
-  listEl.innerHTML=Object.keys(grouped).sort().reverse().map(month=>{
-    const recs=grouped[month];
-    const mTotal=recs.reduce((a,r)=>a+(r.total||0),0);
-    const mNet=recs.reduce((a,r)=>a+(r.net||0),0);
-
-    const recHtml=recs.map(r=>{
-      const typeLabel=r.type==='stay'?'🏠 住宿':'🚗 到府';
-      const dateRange=r.type==='stay'
-        ?`${r.ciDate}${r.ciTime?' '+r.ciTime:''} → ${r.coDate}${r.coTime?' '+r.coTime:''}`
-        :`${r.start} → ${r.end}`;
-      const qty=r.type==='stay'?r.days+'天':r.times+'次';
-      const pctLabel=Math.round((r.pct||0)*100)+'%';
-      return `<div class="rec-card">
-        <div class="rec-hdr">
-          <div>
-            <div class="rec-title">${esc(r.petName)} · ${typeLabel} · <span style="font-size:0.75rem;font-weight:500;color:${r.paid?'var(--green)':'var(--danger)'}">${r.paid?'✓ 已付款':'✗ 未付款'}</span></div>
-            <div class="rec-meta">${r.createdAt||''} · ${esc(r.operator||'')}</div>
-          </div>
-          <div class="rec-amount">${fmt(r.total)}<small>實拿 ${fmt(r.net)} · 抽成 ${pctLabel}</small></div>
-        </div>
-        <div class="rec-detail" id="rd-${r.id}">
-          <div class="rec-dr"><span class="rec-dl">日期</span><span class="rec-dv">${dateRange}</span></div>
-          <div class="rec-dr"><span class="rec-dl">數量</span><span class="rec-dv">${qty}</span></div>
-          <div class="rec-dr"><span class="rec-dl">單價</span><span class="rec-dv">${fmt(r.price)}</span></div>
-          <div class="rec-dr"><span class="rec-dl">抽成比例</span><span class="rec-dv"><input type="number" step="0.05" min="0" max="1" value="${r.pct||0.8}" style="width:60px;border:1px solid var(--border);border-radius:6px;padding:2px 6px;font-size:0.77rem;font-family:inherit;text-align:right;background:var(--bg)" onchange="updateRecPct('${r.id}',this.value)"> (${pctLabel})</span></div>
-          <div class="rec-dr"><span class="rec-dl">抽成金額</span><span class="rec-dv">${fmt(r.commission)}</span></div>
-          <div class="rec-dr"><span class="rec-dl">付款狀態</span><span class="rec-dv ${r.paid?'paid':'unpaid'}">${r.paid?'✓ 已付款':'✗ 未付款'}</span></div>
-          ${r.note?`<div class="rec-dr"><span class="rec-dl">備註</span><span class="rec-dv">${esc(r.note)}</span></div>`:''}
-          <div style="display:flex;gap:7px;padding-top:9px;flex-wrap:wrap">
-            <button class="btn-ghost" style="flex:1" onclick="togglePaid('${r.id}')">${r.paid?'↩ 標記未付':'✓ 標記已付'}</button>
-            <button class="btn-ghost" style="flex:1" onclick="copyRecMsg('${r.id}')">📋 複製 LINE</button>
-            <button class="btn-danger" onclick="deleteRecord('${r.id}')">刪除</button>
-          </div>
-        </div>
-        <button class="rec-expand-btn" id="rb-${r.id}" onclick="toggleRecDetail('${r.id}')">▸ 展開</button>
-      </div>`;
-    }).join('');
-    return `<div class="month-hdr"><span class="month-label">${month.replace('-','年')}月</span><span class="month-stats">總額 ${fmt(mTotal)} · 實拿 ${fmt(mNet)}</span></div>${recHtml}`;
-  }).join('');
-}
-
-// ══ Modal helpers ══
-function openModal(id){document.getElementById(id).classList.add('open');}
-function closeModal(id){document.getElementById(id).classList.remove('open');}
-function closeBg(id,e){if(e.target===document.getElementById(id))closeModal(id);}
-
-// ══ Toast ══
-function toast(msg){
-  const t=document.getElementById('toast');
-  t.textContent=msg;t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),2400);
-}
-</script>
 </body>
 </html>

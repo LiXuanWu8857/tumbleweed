@@ -253,6 +253,40 @@
   </div>
 </div>
 
+<!-- ══ Edit Pet Modal ══ -->
+<div class="modal-bg" id="editPetModal" onclick="closeBg('editPetModal',event)">
+  <div class="modal">
+    <div class="modal-title">
+      <span>✏️ 編輯寵物資料</span>
+      <button class="modal-close" onclick="closeModal('editPetModal')">✕</button>
+    </div>
+    <div id="ep-info" class="er-info"></div>
+    <div class="form-row"><label>寵物名稱</label><input class="f" id="ep-name" placeholder="例：乖乖"></div>
+    <div class="form-row"><label>住宿單價 / 天</label><input type="number" class="f" id="ep-stay-price" placeholder="0"></div>
+    <div class="form-row"><label>安親單價 / 8hr</label><input type="number" class="f" id="ep-daycare-price" placeholder="0"></div>
+    <div class="form-row"><label>到府單價 / 次</label><input type="number" class="f" id="ep-visit-price" placeholder="0"></div>
+    <div class="form-row"><label>預設抽成比例（例 0.8 = 80%）</label><input type="number" class="f" id="ep-pct" placeholder="0.8" step="0.05"></div>
+    <div class="form-row"><label>服務類型</label>
+      <select class="f" id="ep-service-type">
+        <option value="">未設定</option>
+        <option value="stay">🏠 住宿</option>
+        <option value="visit">🚗 到府</option>
+        <option value="both">🏠🚗 兩種都有</option>
+      </select>
+    </div>
+    <div class="form-row"><label>備註</label><textarea class="f" id="ep-note" placeholder="品種、特殊需求..."></textarea></div>
+    <div class="form-row er-reason-row">
+      <label>編輯原因 <span class="required-hint">（必填，不填無法儲存）</span></label>
+      <textarea class="f" id="ep-reason" placeholder="請說明更改原因，例：費用調整、資料更正…"></textarea>
+    </div>
+    <input type="hidden" id="ep-id">
+    <div class="form-actions">
+      <button class="btn-cancel-form" onclick="closeModal('editPetModal')">取消</button>
+      <button class="btn-save-form" onclick="saveEditPet()">儲存變更</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ Care Manual Modal ══ -->
 <div class="modal-bg" id="careModal" onclick="closeBg('careModal',event)">
   <div class="modal" style="padding:0;display:flex;flex-direction:column;max-height:88vh;">

@@ -391,13 +391,14 @@ function renderRecords() {
     const recHtml = recs.map(r => {
       const typeLabel  = r.type === 'stay' ? '🏠 住宿' : '🚗 到府';
       const dateRange  = r.type === 'stay' ? `${r.ciDate}${r.ciTime ? ' ' + r.ciTime : ''} → ${r.coDate}${r.coTime ? ' ' + r.coTime : ''}` : `${r.start} → ${r.end}`;
+      const dateMeta   = r.type === 'stay' ? `${fmtD(r.ciDate)} → ${fmtD(r.coDate)}` : `${fmtD(r.start)} → ${fmtD(r.end)}`;
       const qty        = r.type === 'stay' ? r.days + '天' : r.times + '次';
       const pctLabel   = Math.round((r.pct || 0) * 100) + '%';
       return `<div class="rec-card">
         <div class="rec-hdr">
           <div>
             <div class="rec-title">${esc(r.petName)} · ${typeLabel} · <span style="font-size:0.75rem;font-weight:500;color:${r.paid ? 'var(--green)' : 'var(--danger)'}">${r.paid ? '✓ 已付款' : '✗ 未付款'}</span></div>
-            <div class="rec-meta">${r.createdAt || ''} · ${esc(r.operator || '')}</div>
+            <div class="rec-meta">${dateMeta} · ${esc(r.operator || '')}</div>
           </div>
           <div class="rec-amount">${fmt(r.total)}<small>實拿 ${fmt(r.net)} · 抽成 ${pctLabel}</small></div>
         </div>

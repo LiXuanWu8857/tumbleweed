@@ -202,11 +202,17 @@ function deduplicatePets() {
     const stepIds = new Set((keeper.careSteps || []).map(s => s.id));
     const mergedSteps = [...(keeper.careSteps || [])];
     for (let i = 1; i < group.length; i++) {
-      (group[i].careSteps || []).forEach(s => {
+      const dup = group[i];
+      if (!keeper.note        && dup.note)        keeper.note        = dup.note;
+      if (!keeper.stayPrice   && dup.stayPrice)   keeper.stayPrice   = dup.stayPrice;
+      if (!keeper.daycarePrice && dup.daycarePrice) keeper.daycarePrice = dup.daycarePrice;
+      if (!keeper.visitPrice  && dup.visitPrice)  keeper.visitPrice  = dup.visitPrice;
+      if (!keeper.pct         && dup.pct)         keeper.pct         = dup.pct;
+      (dup.careSteps || []).forEach(s => {
         if (!stepIds.has(s.id)) { mergedSteps.push(s); stepIds.add(s.id); }
       });
-      dbRemove('pets/' + group[i].id);
-      pets = pets.filter(p => p.id !== group[i].id);
+      dbRemove('pets/' + dup.id);
+      pets = pets.filter(p => p.id !== dup.id);
     }
     keeper.careSteps = mergedSteps;
     dbSet('pets/' + keeper.id, keeper);

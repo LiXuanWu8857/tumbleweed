@@ -1,4 +1,5 @@
 // ══ Helpers ══
+let _lastIsDaycare = null;
 
 function timeToMins(t) {
   if (!t) return 0;
@@ -19,8 +20,7 @@ function calcFreshMeals(ciDate, ciTime, coDate, coTime) {
 // ══ Stay ══
 
 function onStayPetChange() {
-  const pet = pets.find(p => p.id === document.getElementById('s-pet').value);
-  if (pet && pet.stayPrice) document.getElementById('s-price').value = pet.stayPrice;
+  _lastIsDaycare = null;
   stayCalc();
 }
 
@@ -29,7 +29,6 @@ function stayCalc() {
   const ciTime       = document.getElementById('s-ci-time').value;
   const coDate       = document.getElementById('s-co-date').value;
   const coTime       = document.getElementById('s-co-time').value;
-  const price        = parseFloat(document.getElementById('s-price').value) || 0;
   const special      = document.getElementById('s-special').checked;
   const transport    = document.getElementById('s-transport').checked;
   const transportFee = parseFloat(document.getElementById('s-transport-fee').value) || 0;
@@ -37,11 +36,32 @@ function stayCalc() {
   const freshPrice   = parseFloat(document.getElementById('s-fresh-price').value) || 0;
   let days = '', extraLabel = '', total = 0, freshMeals = 0;
 
+  // 判斷是否為安親（≤ 8 小時）
+  let totalHours = null;
+  if (ciDate && coDate && ciTime && coTime) {
+    totalHours = (new Date(coDate + 'T' + coTime) - new Date(ciDate + 'T' + ciTime)) / 3600000;
+  }
+  const isDaycare = totalHours !== null && totalHours > 0 && totalHours <= 8;
+
+  // 當模式切換時自動帶入對應單價
+  const petId = document.getElementById('s-pet').value;
+  const pet   = pets.find(p => p.id === petId);
+  if (isDaycare !== _lastIsDaycare) {
+    _lastIsDaycare = isDaycare;
+    if (isDaycare && pet && pet.daycarePrice) {
+      document.getElementById('s-price').value = pet.daycarePrice;
+    } else if (!isDaycare && pet && pet.stayPrice) {
+      document.getElementById('s-price').value = pet.stayPrice;
+    }
+  }
+
+  const price = parseFloat(document.getElementById('s-price').value) || 0;
+
   if (ciDate && coDate) {
     let diff = (new Date(coDate) - new Date(ciDate)) / 86400000;
     if (diff < 0) diff = 0;
     let extra = 0;
-    if (ciTime && coTime) {
+    if (!isDaycare && ciTime && coTime) {
       const ciH = parseInt(ciTime), coH = parseInt(coTime);
       const timeDiff = coH - ciH;
       if (timeDiff > 0) {
@@ -49,19 +69,30 @@ function stayCalc() {
         extraLabel = extra === 0.5 ? '是 (+½ 天)' : '加整天';
       }
     }
-    days = diff === 0 ? 1 : (extra > 0 ? diff + extra : diff);
+    days = isDaycare ? 1 : (diff === 0 ? 1 : (extra > 0 ? diff + extra : diff));
     days = days % 1 === 0 ? days : parseFloat(days.toFixed(1));
     const daysRounded = Math.round(days * 2) / 2;
-    if (fresh && ciDate && coDate) {
-      freshMeals = calcFreshMeals(ciDate, ciTime, coDate, coTime);
-    }
-    const freshTotal    = fresh ? freshPrice * freshMeals : 0;
+    if (fresh && ciDate && coDate) freshMeals = calcFreshMeals(ciDate, ciTime, coDate, coTime);
+    const freshTotal     = fresh ? freshPrice * freshMeals : 0;
     const transportTotal = transport ? transportFee : 0;
     total = price * daysRounded + (special ? 150 * daysRounded : 0) + transportTotal + freshTotal;
   }
 
-  document.getElementById('s-extra').textContent = extraLabel || '—';
-  document.getElementById('s-days').textContent  = days !== '' ? days + ' 天' : '—';
+  // 更新標籤
+  if (isDaycare) {
+    document.getElementById('s-extra-label').textContent = '類型';
+    document.getElementById('s-extra').textContent = '安親';
+    document.getElementById('s-days-label').textContent = '時數';
+    document.getElementById('s-days').textContent = totalHours !== null ? totalHours.toFixed(1) + ' 小時' : '—';
+    document.getElementById('s-price-label').textContent = '安親單價 / 8hr';
+  } else {
+    document.getElementById('s-extra-label').textContent = '加半天';
+    document.getElementById('s-extra').textContent = extraLabel || '—';
+    document.getElementById('s-days-label').textContent = '總天數';
+    document.getElementById('s-days').textContent = days !== '' ? days + ' 天' : '—';
+    document.getElementById('s-price-label').textContent = '單價 / 天';
+  }
+
   const freshRow = document.getElementById('s-fresh-meals-row');
   if (fresh && freshMeals > 0) {
     freshRow.style.display = '';
@@ -72,15 +103,13 @@ function stayCalc() {
   const scb = document.getElementById('s-save-copy-btn');
   if (price > 0 && days !== '') {
     document.getElementById('s-total').textContent = fmt(total);
-    const petId = document.getElementById('s-pet').value;
-    const pet   = pets.find(p => p.id === petId);
     if (pet && ciDate && coDate) {
       document.getElementById('s-msg-preview').textContent =
-        buildStayMsg({ petName: pet.name, ciDate, ciTime, coDate, coTime, days, price, total, special, transport, transportFee, fresh, freshPrice, freshMeals });
+        buildStayMsg({ petName: pet.name, ciDate, ciTime, coDate, coTime, days, price, total, special, transport, transportFee, fresh, freshPrice, freshMeals, isDaycare });
       rc.style.display = 'block'; scb.style.display = 'block';
     }
   } else { rc.style.display = 'none'; scb.style.display = 'none'; }
-  return { days, total, special, transport, transportFee, fresh, freshPrice, freshMeals };
+  return { days, total, special, transport, transportFee, fresh, freshPrice, freshMeals, isDaycare };
 }
 
 function buildStayRec() {

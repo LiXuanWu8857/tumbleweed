@@ -25,7 +25,9 @@ function buildStayMsg(r) {
   const grandTotal   = Math.round(unitDayPrice * daysRounded) + transportAmt + freshTotal;
   const bank = getSitterBank();
 
-  const calcParts = [`${unitDayPrice} $ * ${daysRounded} 天`];
+  const calcParts = r.isDaycare
+    ? [`${unitDayPrice} $`]
+    : [`${unitDayPrice} $ * ${daysRounded} 天`];
   if (r.transport && transportAmt) calcParts.push(`${transportAmt} $`);
   if (r.fresh && freshMeals)       calcParts.push(`${r.freshPrice || 0} $ * ${freshMeals} 餐`);
   const calcLine = '總金額 = ' + calcParts.join(' + ') + ' = ' + grandTotal + ' $';
@@ -33,9 +35,9 @@ function buildStayMsg(r) {
   const lines = [
     r.petName,
     '時段 - ' + ci + ' ~ ' + co,
-    '共 ' + daysRounded + ' 天',
+    r.isDaycare ? '安親' : ('共 ' + daysRounded + ' 天'),
     '',
-    '住宿費 ' + unitDayPrice + ' $ / 天',
+    r.isDaycare ? ('安親費 ' + unitDayPrice + ' $ / 8hr') : ('住宿費 ' + unitDayPrice + ' $ / 天'),
     r.transport ? '接送服務 ' + transportAmt + ' $' : null,
     r.fresh ? '鮮食費 ' + (r.freshPrice || 0) + ' $ / 餐 × ' + freshMeals + ' 餐 = ' + freshTotal + '$' : null,
     '',

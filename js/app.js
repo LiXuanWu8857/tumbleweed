@@ -38,7 +38,11 @@ function snapToArray(snap) {
 function initApp() {
   setupDateListeners();
   const db = window._db, r = window._ref, ov = window._onValue;
-  ov(r(db, 'sitters'), (snap) => { sitters = snapToArray(snap); renderSitterList(); populateOpSelect(); populatePetSelects(); renderCarePetGrid(); });
+  let _sitInit = false;
+  ov(r(db, 'sitters'), (snap) => {
+    if (!_sitInit) { _sitInit = true; migrateSittersToIdKeys(snap); }
+    sitters = snapToArray(snap); renderSitterList(); populateOpSelect(); populatePetSelects(); renderCarePetGrid();
+  });
   let _petInit = false;
   ov(r(db, 'pets'), (snap) => {
     if (!_petInit) { _petInit = true; migratePetsToIdKeys(snap); }
@@ -63,6 +67,19 @@ function migratePetsToIdKeys(snap) {
     if (!pet || !pet.id) return;
     dbSet('pets/' + pet.id, pet);
     dbRemove('pets/' + k);
+  });
+}
+
+function migrateSittersToIdKeys(snap) {
+  const val = snap.val();
+  if (!val || typeof val !== 'object') return;
+  const numericKeys = Object.keys(val).filter(k => /^\d+$/.test(k));
+  if (!numericKeys.length) return;
+  numericKeys.forEach(k => {
+    const s = val[k];
+    if (!s || !s.id) return;
+    dbSet('sitters/' + s.id, s);
+    dbRemove('sitters/' + k);
   });
 }
 

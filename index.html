@@ -278,6 +278,29 @@
   </div>
 </div>
 
+<!-- ══ Edit Record Modal ══ -->
+<div class="modal-bg" id="editRecModal" onclick="closeBg('editRecModal',event)">
+  <div class="modal">
+    <div class="modal-title">
+      <span>✏️ 編輯紀錄</span>
+      <button class="modal-close" onclick="closeModal('editRecModal')">✕</button>
+    </div>
+    <div id="er-info" class="er-info"></div>
+    <div class="form-row"><label>日期</label><input type="date" class="f" id="er-date"></div>
+    <div class="form-row"><label>單價</label><input type="number" class="f" id="er-price" min="0" placeholder="0"></div>
+    <div class="form-row"><label>抽成比例（0–1）</label><input type="number" class="f" id="er-pct" step="0.05" min="0" max="1" placeholder="0.8"></div>
+    <div class="form-row er-reason-row">
+      <label>編輯原因 <span class="required-hint">（必填，不填無法儲存）</span></label>
+      <textarea class="f" id="er-reason" placeholder="請說明更改原因，例：日期填錯、費用調整…"></textarea>
+    </div>
+    <input type="hidden" id="er-id">
+    <div class="form-actions">
+      <button class="btn-cancel-form" onclick="closeModal('editRecModal')">取消</button>
+      <button class="btn-save-form" onclick="saveEditRec()">儲存變更</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <!-- Firebase (module) -->

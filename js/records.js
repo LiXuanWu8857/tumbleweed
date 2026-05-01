@@ -197,12 +197,49 @@ function deleteRecord(id) {
   updateMonthFilter(); renderRecords();
 }
 
-function updateRecPct(id, val) {
+function openEditRecModal(id) {
+  if (!getOp() || getOp() === '未知') { toast('⚠️ 請先在右上角選擇輸入者才能編輯'); return; }
   const r = records.find(x => x.id === id); if (!r) return;
-  const pct = parseFloat(val) || 0;
-  r.pct = pct; r.net = Math.round(r.total * pct); r.commission = Math.round(r.total * (1 - pct));
-  dbUpdate('records/' + id, { pct: r.pct, net: r.net, commission: r.commission });
+  document.getElementById('er-id').value = id;
+  document.getElementById('er-date').value = r.date || r.ciDate || r.start || '';
+  document.getElementById('er-price').value = r.price || '';
+  document.getElementById('er-pct').value = r.pct != null ? r.pct : 0.8;
+  document.getElementById('er-reason').value = '';
+  const typeLabel = r.type === 'stay' ? '🏠 住宿' : '🚗 到府';
+  document.getElementById('er-info').textContent = `${r.petName} · ${typeLabel} · 建立者：${r.operator || '未知'}`;
+  openModal('editRecModal');
+}
+
+function saveEditRec() {
+  const id = document.getElementById('er-id').value;
+  const reason = document.getElementById('er-reason').value.trim();
+  if (!reason) { toast('⚠️ 請填寫編輯原因才能儲存'); return; }
+  const r = records.find(x => x.id === id); if (!r) return;
+
+  const newDate  = document.getElementById('er-date').value;
+  const newPrice = parseFloat(document.getElementById('er-price').value);
+  const newPct   = parseFloat(document.getElementById('er-pct').value);
+
+  if (newDate) { r.date = newDate; if (r.type === 'stay') r.ciDate = newDate; else r.start = newDate; }
+  if (!isNaN(newPrice) && newPrice > 0) {
+    r.price = newPrice;
+    const daysRounded = Math.round((r.days || 1) * 2) / 2;
+    const times = r.times || 1;
+    r.total = r.type === 'stay'
+      ? Math.round(newPrice * daysRounded + (r.special ? 150 * daysRounded : 0) + (r.distance ? 100 : 0))
+      : Math.round(newPrice * times + (r.special ? 150 * times : 0) + (r.distance ? 100 : 0));
+  }
+  if (!isNaN(newPct) && newPct >= 0 && newPct <= 1) r.pct = newPct;
+  r.net        = Math.round(r.total * r.pct);
+  r.commission = Math.round(r.total * (1 - r.pct));
+  r.editedBy   = getOp();
+  r.editedAt   = new Date().toLocaleString('zh-TW');
+  r.editReason = reason;
+
+  dbSet('records/' + id, r);
+  closeModal('editRecModal');
   renderRecords();
+  toast('✅ 紀錄已更新');
 }
 
 function copyRecMsg(id) {
@@ -266,13 +303,15 @@ function renderRecords() {
           <div class="rec-dr"><span class="rec-dl">日期</span><span class="rec-dv">${dateRange}</span></div>
           <div class="rec-dr"><span class="rec-dl">數量</span><span class="rec-dv">${qty}</span></div>
           <div class="rec-dr"><span class="rec-dl">單價</span><span class="rec-dv">${fmt(r.price)}</span></div>
-          <div class="rec-dr"><span class="rec-dl">抽成比例</span><span class="rec-dv"><input type="number" step="0.05" min="0" max="1" value="${r.pct || 0.8}" style="width:60px;border:1px solid var(--border);border-radius:6px;padding:2px 6px;font-size:0.77rem;font-family:inherit;text-align:right;background:var(--bg)" onchange="updateRecPct('${r.id}',this.value)"> (${pctLabel})</span></div>
+          <div class="rec-dr"><span class="rec-dl">抽成比例</span><span class="rec-dv">${pctLabel}</span></div>
           <div class="rec-dr"><span class="rec-dl">抽成金額</span><span class="rec-dv">${fmt(r.commission)}</span></div>
           <div class="rec-dr"><span class="rec-dl">付款狀態</span><span class="rec-dv ${r.paid ? 'paid' : 'unpaid'}">${r.paid ? '✓ 已付款' : '✗ 未付款'}</span></div>
           ${r.note ? `<div class="rec-dr"><span class="rec-dl">備註</span><span class="rec-dv">${esc(r.note)}</span></div>` : ''}
+          ${r.editedBy ? `<div class="rec-edit-log"><div class="rec-edit-label">最後編輯</div><div class="rec-edit-info">${esc(r.editedBy)} · ${esc(r.editedAt)}</div><div class="rec-edit-reason">${esc(r.editReason)}</div></div>` : ''}
           <div style="display:flex;gap:7px;padding-top:9px;flex-wrap:wrap">
-            <button class="btn-ghost" style="flex:1" onclick="togglePaid('${r.id}')">${r.paid ? '↩ 標記未付' : '✓ 標記已付'}</button>
-            <button class="btn-ghost" style="flex:1" onclick="copyRecMsg('${r.id}')">📋 複製 LINE</button>
+            <button class="btn-ghost" style="flex:1;min-width:70px" onclick="togglePaid('${r.id}')">${r.paid ? '↩ 標記未付' : '✓ 標記已付'}</button>
+            <button class="btn-ghost" style="flex:1;min-width:70px" onclick="copyRecMsg('${r.id}')">📋 複製 LINE</button>
+            <button class="btn-ghost" style="flex:1;min-width:70px" onclick="openEditRecModal('${r.id}')">✏️ 編輯</button>
             <button class="btn-danger" onclick="deleteRecord('${r.id}')">刪除</button>
           </div>
         </div>

@@ -182,5 +182,37 @@ select.f{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 @media(min-width:560px){.modal-bg{align-items:center;}.modal{border-radius:22px;max-height:82vh;}.modal>div:first-child{border-radius:22px 22px 0 0;}}
 .empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:0.83rem;}
 .empty .icon{font-size:2.2rem;margin-bottom:10px;}
+/* ── Edit record modal ── */
+.er-info{font-size:0.79rem;color:var(--muted);padding:6px 0 12px;border-bottom:1px solid var(--border);margin-bottom:14px;line-height:1.6;}
+.er-reason-row{background:#fff8f0;border:1.5px solid #ffd0a0;border-radius:8px;padding:10px;margin-top:4px;}
+.er-reason-row label{color:#b06020;}
+.required-hint{font-weight:400;color:var(--muted);font-size:0.7rem;}
+
+/* ── Edit record log（紀錄展開區內的編輯歷史） ── */
+.rec-edit-log{background:#f9f5ff;border:1px solid #e0d5f5;border-radius:8px;padding:7px 10px;margin-top:6px;font-size:0.73rem;}
+.rec-edit-label{font-size:0.65rem;font-weight:700;color:var(--rose);letter-spacing:0.05em;margin-bottom:3px;}
+.rec-edit-info{color:var(--muted);line-height:1.6;}
+.rec-edit-reason{color:var(--text);font-style:italic;margin-top:2px;}
+
+/* ── Step service type tags ── */
+.step-tag.svc-visit{border-color:#3ea9e0;background:#e8f5fd;color:#1e7ab4;}
+.step-tag.svc-stay{border-color:#e07a3e;background:#fdf0e8;color:#b45520;}
+.step-tag.svc-all{border-color:var(--green);background:#e8f5ee;color:#4a8a68;}
+
+/* ── Care checklist section header (到府／住宿／通用) ── */
+.care-section-hdr{font-size:0.67rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);padding:7px 14px 5px;background:var(--pink-lt);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px;}
+.care-section-hdr+.care-section-hdr,.check-item+.care-section-hdr{border-top:2px solid var(--border);}
+
+/* ── Checklist inline edit ── */
+.check-edit-btn{background:none;border:none;color:#ccc;font-size:0.78rem;cursor:pointer;padding:2px 5px;border-radius:6px;transition:all 0.15s;flex-shrink:0;align-self:center;line-height:1;}
+.check-edit-btn:hover{color:var(--rose);background:var(--pink-lt);}
+.check-item.editing{background:var(--pink-lt);padding:12px 14px;align-items:flex-start;}
+.check-edit-form{flex:1;}
+.check-edit-form input{width:100%;border:1px solid var(--border);border-radius:7px;padding:6px 10px;font-size:0.82rem;font-family:inherit;color:var(--text);background:#fff;outline:none;margin-bottom:6px;}
+.check-edit-form input:focus{border-color:var(--pink);}
+.check-edit-form textarea{width:100%;border:1px solid var(--border);border-radius:7px;padding:5px 10px;font-size:0.77rem;font-family:inherit;color:var(--text);background:#fff;outline:none;resize:none;height:52px;line-height:1.5;margin-bottom:6px;}
+.check-edit-form textarea:focus{border-color:var(--pink);}
+.check-edit-actions{display:flex;gap:6px;}
+
 .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--rose);color:#fff;padding:10px 20px;border-radius:40px;font-size:0.81rem;font-weight:600;z-index:999;pointer-events:none;transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);white-space:nowrap;box-shadow:0 4px 20px rgba(212,95,122,0.35);}
 .toast.show{transform:translateX(-50%) translateY(0);}

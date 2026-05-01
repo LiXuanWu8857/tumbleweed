@@ -39,10 +39,27 @@ function initApp() {
   setupDateListeners();
   const db = window._db, r = window._ref, ov = window._onValue;
   ov(r(db, 'sitters'), (snap) => { sitters = snapToArray(snap); renderSitterList(); populateOpSelect(); populatePetSelects(); renderCarePetGrid(); });
-  let _petDeduped = false;
-  ov(r(db, 'pets'),    (snap) => { pets = snapToArray(snap);    renderPetList(); populatePetSelects(); renderCarePetGrid(); if (!_petDeduped) { _petDeduped = true; deduplicatePets(); } });
+  let _petInit = false;
+  ov(r(db, 'pets'), (snap) => {
+    if (!_petInit) { _petInit = true; migratePetsToIdKeys(snap); }
+    pets = snapToArray(snap);
+    renderPetList(); populatePetSelects(); renderCarePetGrid();
+  });
   ov(r(db, 'records'), (snap) => { records = snapToArray(snap); updateMonthFilter(); renderRecords(); });
   setDateDefaults();
+}
+
+function migratePetsToIdKeys(snap) {
+  const val = snap.val();
+  if (!val || typeof val !== 'object') return;
+  const numericKeys = Object.keys(val).filter(k => /^\d+$/.test(k));
+  if (!numericKeys.length) return;
+  numericKeys.forEach(k => {
+    const pet = val[k];
+    if (!pet || !pet.id) return;
+    dbSet('pets/' + pet.id, pet);
+    dbRemove('pets/' + k);
+  });
 }
 
 function setDateDefaults() {

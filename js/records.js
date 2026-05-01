@@ -1,3 +1,21 @@
+// ══ Helpers ══
+
+function timeToMins(t) {
+  if (!t) return 0;
+  const [h, m] = t.split(':').map(Number);
+  return h * 60 + (m || 0);
+}
+
+function calcFreshMeals(ciDate, ciTime, coDate, coTime) {
+  if (!ciDate || !coDate) return 0;
+  const dayDiff    = Math.round((new Date(coDate) - new Date(ciDate)) / 86400000);
+  const ciMins     = timeToMins(ciTime);
+  const coMins     = timeToMins(coTime);
+  const breakfasts = dayDiff + (ciMins <= 9 * 60 ? 1 : 0);
+  const dinners    = dayDiff + (coMins >= 20 * 60 ? 1 : 0);
+  return breakfasts + dinners;
+}
+
 // ══ Stay ══
 
 function onStayPetChange() {
@@ -7,14 +25,17 @@ function onStayPetChange() {
 }
 
 function stayCalc() {
-  const ciDate  = document.getElementById('s-ci-date').value;
-  const ciTime  = document.getElementById('s-ci-time').value;
-  const coDate  = document.getElementById('s-co-date').value;
-  const coTime  = document.getElementById('s-co-time').value;
-  const price   = parseFloat(document.getElementById('s-price').value) || 0;
-  const special = document.getElementById('s-special').checked;
-  const distance = document.getElementById('s-distance').checked;
-  let days = '', extraLabel = '', total = 0;
+  const ciDate       = document.getElementById('s-ci-date').value;
+  const ciTime       = document.getElementById('s-ci-time').value;
+  const coDate       = document.getElementById('s-co-date').value;
+  const coTime       = document.getElementById('s-co-time').value;
+  const price        = parseFloat(document.getElementById('s-price').value) || 0;
+  const special      = document.getElementById('s-special').checked;
+  const transport    = document.getElementById('s-transport').checked;
+  const transportFee = parseFloat(document.getElementById('s-transport-fee').value) || 0;
+  const fresh        = document.getElementById('s-fresh').checked;
+  const freshPrice   = parseFloat(document.getElementById('s-fresh-price').value) || 0;
+  let days = '', extraLabel = '', total = 0, freshMeals = 0;
 
   if (ciDate && coDate) {
     let diff = (new Date(coDate) - new Date(ciDate)) / 86400000;
@@ -28,11 +49,21 @@ function stayCalc() {
     days = diff === 0 ? 1 : (extra > 0 ? diff + extra : diff);
     days = days % 1 === 0 ? days : parseFloat(days.toFixed(1));
     const daysRounded = Math.round(days * 2) / 2;
-    total = price * daysRounded + (special ? 150 * daysRounded : 0) + (distance ? 100 : 0);
+    if (fresh && ciDate && coDate) {
+      freshMeals = calcFreshMeals(ciDate, ciTime, coDate, coTime);
+    }
+    const freshTotal    = fresh ? freshPrice * freshMeals : 0;
+    const transportTotal = transport ? transportFee : 0;
+    total = price * daysRounded + (special ? 150 * daysRounded : 0) + transportTotal + freshTotal;
   }
 
   document.getElementById('s-extra').textContent = extraLabel || '—';
   document.getElementById('s-days').textContent  = days !== '' ? days + ' 天' : '—';
+  const freshRow = document.getElementById('s-fresh-meals-row');
+  if (fresh && freshMeals > 0) {
+    freshRow.style.display = '';
+    document.getElementById('s-fresh-meals').textContent = freshMeals + ' 餐';
+  } else { freshRow.style.display = 'none'; }
 
   const rc  = document.getElementById('s-result-card');
   const scb = document.getElementById('s-save-copy-btn');
@@ -42,11 +73,11 @@ function stayCalc() {
     const pet   = pets.find(p => p.id === petId);
     if (pet && ciDate && coDate) {
       document.getElementById('s-msg-preview').textContent =
-        buildStayMsg({ petName: pet.name, ciDate, ciTime, coDate, coTime, days, price, total, special, distance });
+        buildStayMsg({ petName: pet.name, ciDate, ciTime, coDate, coTime, days, price, total, special, transport, transportFee, fresh, freshPrice, freshMeals });
       rc.style.display = 'block'; scb.style.display = 'block';
     }
   } else { rc.style.display = 'none'; scb.style.display = 'none'; }
-  return { days, total, special, distance };
+  return { days, total, special, transport, transportFee, fresh, freshPrice, freshMeals };
 }
 
 function buildStayRec() {
@@ -59,11 +90,11 @@ function buildStayRec() {
   const price = parseFloat(document.getElementById('s-price').value) || 0;
   if (!price) { toast('⚠️ 請填寫單價'); return null; }
   const pet = pets.find(p => p.id === petId);
-  const { days, total, special, distance } = stayCalc();
+  const { days, total, special, transport, transportFee, fresh, freshPrice, freshMeals } = stayCalc();
   const pct    = pet?.pct || 0.8;
   const ciTime = document.getElementById('s-ci-time').value;
   const coTime = document.getElementById('s-co-time').value;
-  return { id: makeId(), type: 'stay', petId, petName: pet?.name || '', operator: getOp(), date: ciDate, ciDate, ciTime, coDate, coTime, days, price, pct, special, distance, total: Math.round(total), net: Math.round(total * pct), commission: Math.round(total * (1 - pct)), note: document.getElementById('s-note').value.trim(), paid: false, createdAt: new Date().toLocaleString('zh-TW') };
+  return { id: makeId(), type: 'stay', petId, petName: pet?.name || '', operator: getOp(), date: ciDate, ciDate, ciTime, coDate, coTime, days, price, pct, special, transport, transportFee, fresh, freshPrice, freshMeals, total: Math.round(total), net: Math.round(total * pct), commission: Math.round(total * (1 - pct)), note: document.getElementById('s-note').value.trim(), paid: false, createdAt: new Date().toLocaleString('zh-TW') };
 }
 
 function resetStay() {
@@ -73,9 +104,11 @@ function resetStay() {
   ci.value = t; co.value = t; delete co.dataset.manual;
   document.getElementById('s-ci-time').value = '07:00';
   document.getElementById('s-co-time').value = '07:00';
-  ['s-price', 's-note'].forEach(id => document.getElementById(id).value = '');
+  ['s-price', 's-note', 's-transport-fee', 's-fresh-price'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('s-special').checked = false;
-  document.getElementById('s-distance').checked = false;
+  document.getElementById('s-transport').checked = false;
+  document.getElementById('s-fresh').checked = false;
+  document.getElementById('s-fresh-meals-row').style.display = 'none';
   document.getElementById('s-result-card').style.display = 'none';
   document.getElementById('s-save-copy-btn').style.display = 'none';
 }
@@ -114,7 +147,7 @@ function visitCalc() {
     if (sAMPM === 'PM') t -= tpd / 2;
     if (eAMPM === 'AM') t -= tpd / 2;
     times = Math.max(0, Math.ceil(t));
-    total = price * times + (special ? 150 * times : 0) + (distance ? 100 : 0);
+    total = price * times + (special ? 150 * times : 0) + (distance ? 100 * times : 0);
   }
 
   document.getElementById('v-times').textContent = times !== '' ? times + ' 次' : '—';
@@ -200,12 +233,24 @@ function deleteRecord(id) {
 function openEditRecModal(id) {
   if (!getOp() || getOp() === '未知') { toast('⚠️ 請先在右上角選擇輸入者才能編輯'); return; }
   const r = records.find(x => x.id === id); if (!r) return;
+  const isStay = r.type === 'stay';
   document.getElementById('er-id').value = id;
-  document.getElementById('er-date').value = r.date || r.ciDate || r.start || '';
+  document.getElementById('er-type').value = r.type;
   document.getElementById('er-price').value = r.price || '';
   document.getElementById('er-pct').value = r.pct != null ? r.pct : 0.8;
   document.getElementById('er-reason').value = '';
-  const typeLabel = r.type === 'stay' ? '🏠 住宿' : '🚗 到府';
+  document.getElementById('er-stay-dates').style.display  = isStay ? '' : 'none';
+  document.getElementById('er-visit-dates').style.display = isStay ? 'none' : '';
+  if (isStay) {
+    document.getElementById('er-ci-date').value = r.ciDate || '';
+    document.getElementById('er-ci-time').value = r.ciTime || '';
+    document.getElementById('er-co-date').value = r.coDate || '';
+    document.getElementById('er-co-time').value = r.coTime || '';
+  } else {
+    document.getElementById('er-v-start').value = r.start || '';
+    document.getElementById('er-v-end').value   = r.end   || '';
+  }
+  const typeLabel = isStay ? '🏠 住宿' : '🚗 到府';
   document.getElementById('er-info').textContent = `${r.petName} · ${typeLabel} · 建立者：${r.operator || '未知'}`;
   openModal('editRecModal');
 }
@@ -216,25 +261,64 @@ function saveEditRec() {
   if (!reason) { toast('⚠️ 請填寫編輯原因才能儲存'); return; }
   const r = records.find(x => x.id === id); if (!r) return;
 
-  const newDate  = document.getElementById('er-date').value;
   const newPrice = parseFloat(document.getElementById('er-price').value);
   const newPct   = parseFloat(document.getElementById('er-pct').value);
+  const changes  = [];
+  const oldTotal = r.total;
 
-  if (newDate) { r.date = newDate; if (r.type === 'stay') r.ciDate = newDate; else r.start = newDate; }
-  if (!isNaN(newPrice) && newPrice > 0) {
-    r.price = newPrice;
-    const daysRounded = Math.round((r.days || 1) * 2) / 2;
-    const times = r.times || 1;
-    r.total = r.type === 'stay'
-      ? Math.round(newPrice * daysRounded + (r.special ? 150 * daysRounded : 0) + (r.distance ? 100 : 0))
-      : Math.round(newPrice * times + (r.special ? 150 * times : 0) + (r.distance ? 100 : 0));
+  if (r.type === 'stay') {
+    const newCiDate = document.getElementById('er-ci-date').value;
+    const newCiTime = document.getElementById('er-ci-time').value;
+    const newCoDate = document.getElementById('er-co-date').value;
+    const newCoTime = document.getElementById('er-co-time').value;
+    if (newCiDate && newCiDate !== r.ciDate) { changes.push({ f: '入住日期', o: r.ciDate, n: newCiDate }); r.ciDate = newCiDate; r.date = newCiDate; }
+    if (newCiTime !== r.ciTime)              { changes.push({ f: '入住時間', o: r.ciTime, n: newCiTime }); r.ciTime = newCiTime; }
+    if (newCoDate && newCoDate !== r.coDate) { changes.push({ f: '離開日期', o: r.coDate, n: newCoDate }); r.coDate = newCoDate; }
+    if (newCoTime !== r.coTime)              { changes.push({ f: '離開時間', o: r.coTime, n: newCoTime }); r.coTime = newCoTime; }
+    if (r.ciDate && r.coDate) {
+      let diff = (new Date(r.coDate) - new Date(r.ciDate)) / 86400000;
+      if (diff < 0) diff = 0;
+      let extra = 0;
+      if (r.ciTime && r.coTime) {
+        const ciH = parseInt(r.ciTime), coH = parseInt(r.coTime);
+        extra = Math.abs(coH - ciH) < 12 ? 0.5 : 1;
+      }
+      const newDays = diff === 0 ? 1 : (extra > 0 ? diff + extra : diff);
+      if (newDays !== r.days) { changes.push({ f: '天數', o: r.days, n: newDays }); r.days = newDays; }
+    }
+  } else {
+    const newStart = document.getElementById('er-v-start').value;
+    const newEnd   = document.getElementById('er-v-end').value;
+    if (newStart && newStart !== r.start) { changes.push({ f: '開始日期', o: r.start, n: newStart }); r.start = newStart; r.date = newStart; }
+    if (newEnd   && newEnd   !== r.end)   { changes.push({ f: '結束日期', o: r.end,   n: newEnd   }); r.end   = newEnd;   }
+    if (r.start && r.end) {
+      const dayDiff = Math.floor((new Date(r.end) - new Date(r.start)) / 86400000) + 1;
+      const tpd = r.timesDay || 1;
+      let t = dayDiff * tpd;
+      if (r.startAMPM === 'PM') t -= tpd / 2;
+      if (r.endAMPM   === 'AM') t -= tpd / 2;
+      const newTimes = Math.max(0, Math.ceil(t));
+      if (newTimes !== r.times) { changes.push({ f: '次數', o: r.times, n: newTimes }); r.times = newTimes; }
+    }
   }
-  if (!isNaN(newPct) && newPct >= 0 && newPct <= 1) r.pct = newPct;
+
+  if (!isNaN(newPrice) && newPrice > 0 && newPrice !== r.price) { changes.push({ f: '單價', o: r.price, n: newPrice }); r.price = newPrice; }
+  if (!isNaN(newPct)   && newPct >= 0  && newPct <= 1 && newPct !== r.pct) { changes.push({ f: '抽成', o: r.pct, n: newPct }); r.pct = newPct; }
+
+  const daysRounded = Math.round((r.days || 1) * 2) / 2;
+  const times = r.times || 1;
+  if (r.type === 'stay') {
+    r.total = Math.round(r.price * daysRounded + (r.special ? 150 * daysRounded : 0) + (r.transport ? r.transportFee || 0 : 0) + (r.fresh ? (r.freshPrice || 0) * (r.freshMeals || 0) : 0));
+  } else {
+    r.total = Math.round(r.price * times + (r.special ? 150 * times : 0) + (r.distance ? 100 * times : 0));
+  }
+  if (r.total !== oldTotal) changes.push({ f: '總金額', o: oldTotal, n: r.total });
   r.net        = Math.round(r.total * r.pct);
   r.commission = Math.round(r.total * (1 - r.pct));
   r.editedBy   = getOp();
   r.editedAt   = new Date().toLocaleString('zh-TW');
   r.editReason = reason;
+  r.editHistory = [...(r.editHistory || []), { editedBy: getOp(), editedAt: r.editedAt, reason, changes }];
 
   dbSet('records/' + id, r);
   closeModal('editRecModal');
@@ -242,10 +326,25 @@ function saveEditRec() {
   toast('✅ 紀錄已更新');
 }
 
+function buildEditLogHtml(r) {
+  const history = r.editHistory || [];
+  if (!history.length) {
+    if (!r.editedBy) return '';
+    return `<div class="rec-edit-log"><div class="rec-edit-label">最後編輯</div><div class="rec-edit-info">${esc(r.editedBy)} · ${esc(r.editedAt)}</div><div class="rec-edit-reason">${esc(r.editReason)}</div></div>`;
+  }
+  const entries = history.map(h => {
+    const changesHtml = h.changes && h.changes.length
+      ? h.changes.map(c => `<div class="rec-edit-change">${esc(c.f)}: ${esc(String(c.o))} → ${esc(String(c.n))}</div>`).join('')
+      : '';
+    return `<div class="rec-edit-entry"><div class="rec-edit-info">${esc(h.editedBy)} · ${esc(h.editedAt)}</div>${changesHtml}<div class="rec-edit-reason">${esc(h.reason)}</div></div>`;
+  }).join('');
+  return `<div class="rec-edit-log"><div class="rec-edit-label">編輯歷史</div>${entries}</div>`;
+}
+
 function copyRecMsg(id) {
   const r = records.find(x => x.id === id); if (!r) return;
   const msg = r.type === 'stay'
-    ? buildStayMsg({ petName: r.petName, ciDate: r.ciDate, ciTime: r.ciTime, coDate: r.coDate, coTime: r.coTime, days: r.days, price: r.price, total: r.total, special: r.special, distance: r.distance })
+    ? buildStayMsg({ petName: r.petName, ciDate: r.ciDate, ciTime: r.ciTime, coDate: r.coDate, coTime: r.coTime, days: r.days, price: r.price, total: r.total, special: r.special, transport: r.transport, transportFee: r.transportFee, fresh: r.fresh, freshPrice: r.freshPrice, freshMeals: r.freshMeals })
     : buildVisitMsg({ petName: r.petName, start: r.start, end: r.end, sAMPM: r.startAMPM, eAMPM: r.endAMPM, tpd: r.timesDay, times: r.times, price: r.price, total: r.total, special: r.special, distance: r.distance });
   navigator.clipboard.writeText(msg)
     .then(() => toast('✅ 訊息已複製！'))
@@ -307,7 +406,7 @@ function renderRecords() {
           <div class="rec-dr"><span class="rec-dl">抽成金額</span><span class="rec-dv">${fmt(r.commission)}</span></div>
           <div class="rec-dr"><span class="rec-dl">付款狀態</span><span class="rec-dv ${r.paid ? 'paid' : 'unpaid'}">${r.paid ? '✓ 已付款' : '✗ 未付款'}</span></div>
           ${r.note ? `<div class="rec-dr"><span class="rec-dl">備註</span><span class="rec-dv">${esc(r.note)}</span></div>` : ''}
-          ${r.editedBy ? `<div class="rec-edit-log"><div class="rec-edit-label">最後編輯</div><div class="rec-edit-info">${esc(r.editedBy)} · ${esc(r.editedAt)}</div><div class="rec-edit-reason">${esc(r.editReason)}</div></div>` : ''}
+          ${buildEditLogHtml(r)}
           <div style="display:flex;gap:7px;padding-top:9px;flex-wrap:wrap">
             <button class="btn-ghost" style="flex:1;min-width:70px" onclick="togglePaid('${r.id}')">${r.paid ? '↩ 標記未付' : '✓ 標記已付'}</button>
             <button class="btn-ghost" style="flex:1;min-width:70px" onclick="copyRecMsg('${r.id}')">📋 複製 LINE</button>

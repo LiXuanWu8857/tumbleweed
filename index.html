@@ -90,11 +90,23 @@
         特殊照護 <span style="color:var(--muted);font-size:0.74rem">+$150 / 天</span>
       </label>
     </div>
-    <div class="field-row" style="grid-template-columns:1fr auto">
-      <label style="font-size:0.82rem;cursor:pointer;display:flex;align-items:center;gap:8px">
-        <input type="checkbox" id="s-distance" onchange="stayCalc()" style="accent-color:var(--rose);width:16px;height:16px">
-        遠距離加給 <span style="color:var(--muted);font-size:0.74rem">+$100 / 趟</span>
+    <div class="field-row" style="display:flex;align-items:center;gap:8px">
+      <label style="font-size:0.82rem;cursor:pointer;display:flex;align-items:center;gap:8px;flex:1;min-width:0">
+        <input type="checkbox" id="s-transport" onchange="stayCalc()" style="accent-color:var(--rose);width:16px;height:16px">
+        接送服務
       </label>
+      <input type="number" class="f" id="s-transport-fee" placeholder="金額" min="0" oninput="stayCalc()" style="width:88px">
+    </div>
+    <div class="field-row" style="display:flex;align-items:center;gap:8px">
+      <label style="font-size:0.82rem;cursor:pointer;display:flex;align-items:center;gap:8px;flex:1;min-width:0">
+        <input type="checkbox" id="s-fresh" onchange="stayCalc()" style="accent-color:var(--rose);width:16px;height:16px">
+        鮮食費 <span style="color:var(--muted);font-size:0.74rem">元/餐</span>
+      </label>
+      <input type="number" class="f" id="s-fresh-price" placeholder="元/餐" min="0" oninput="stayCalc()" style="width:88px">
+    </div>
+    <div class="field-row" id="s-fresh-meals-row" style="display:none">
+      <span class="field-label">計算餐數</span>
+      <div class="field-val gray" id="s-fresh-meals">—</div>
     </div>
   </div>
   <div id="s-result-card" style="display:none">
@@ -222,6 +234,14 @@
     <div class="form-row"><label>住宿單價 / 天</label><input type="number" class="f" id="pm-stay-price" placeholder="0"></div>
     <div class="form-row"><label>到府單價 / 次</label><input type="number" class="f" id="pm-visit-price" placeholder="0"></div>
     <div class="form-row"><label>預設抽成比例（例 0.8 = 80%）</label><input type="number" class="f" id="pm-pct" placeholder="0.8" step="0.05"></div>
+    <div class="form-row"><label>服務類型</label>
+      <select class="f" id="pm-service-type">
+        <option value="">未設定</option>
+        <option value="stay">🏠 住宿</option>
+        <option value="visit">🚗 到府</option>
+        <option value="both">🏠🚗 兩種都有</option>
+      </select>
+    </div>
     <div class="form-row"><label>備註</label><textarea class="f" id="pm-note" placeholder="品種、特殊需求..."></textarea></div>
     <input type="hidden" id="pm-id">
     <div class="form-actions">
@@ -286,7 +306,17 @@
       <button class="modal-close" onclick="closeModal('editRecModal')">✕</button>
     </div>
     <div id="er-info" class="er-info"></div>
-    <div class="form-row"><label>日期</label><input type="date" class="f" id="er-date"></div>
+    <input type="hidden" id="er-type">
+    <div id="er-stay-dates" style="display:none">
+      <div class="form-row"><label>入住日期</label><input type="date" class="f" id="er-ci-date"></div>
+      <div class="form-row"><label>入住時間</label><input type="time" class="f" id="er-ci-time"></div>
+      <div class="form-row"><label>離開日期</label><input type="date" class="f" id="er-co-date"></div>
+      <div class="form-row"><label>離開時間</label><input type="time" class="f" id="er-co-time"></div>
+    </div>
+    <div id="er-visit-dates" style="display:none">
+      <div class="form-row"><label>開始日期</label><input type="date" class="f" id="er-v-start"></div>
+      <div class="form-row"><label>結束日期</label><input type="date" class="f" id="er-v-end"></div>
+    </div>
     <div class="form-row"><label>單價</label><input type="number" class="f" id="er-price" min="0" placeholder="0"></div>
     <div class="form-row"><label>抽成比例（0–1）</label><input type="number" class="f" id="er-pct" step="0.05" min="0" max="1" placeholder="0.8"></div>
     <div class="form-row er-reason-row">

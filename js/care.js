@@ -27,23 +27,15 @@ function renderStepEditor() {
             style="${!s.time || s.time === 'NONE' ? 'border-color:var(--muted);background:#f5f5f5;color:var(--muted)' : ''}"
             onclick="setStepTime(${i},'NONE')">不指定</button>
         </div>
-        <div class="step-tags" style="margin-top:4px">
-          <button class="step-tag ${!s.service || s.service === 'all' ? 'svc-all' : ''}" onclick="setStepService(${i},'all')">📌 通用</button>
-          <button class="step-tag ${s.service === 'visit' ? 'svc-visit' : ''}" onclick="setStepService(${i},'visit')">🚗 到府</button>
-          <button class="step-tag ${s.service === 'stay' ? 'svc-stay' : ''}" onclick="setStepService(${i},'stay')">🏠 住宿</button>
-        </div>
       </div>
       <button class="step-del" onclick="removeStep(${i})">✕</button>
     </div>`).join('');
 }
 
-// Feature 2: 預設改為「不指定」
-function addStep()               { careSteps.push({ id: makeId(), text: '', desc: '', time: 'NONE', service: 'all' }); renderStepEditor(); }
-function addTplStep(title, desc) { careSteps.push({ id: makeId(), text: title, desc: desc, time: 'NONE', service: 'all' }); renderStepEditor(); }
+function addStep()               { careSteps.push({ id: makeId(), text: '', desc: '', time: 'NONE' }); renderStepEditor(); }
+function addTplStep(title, desc) { careSteps.push({ id: makeId(), text: title, desc: desc, time: 'NONE' }); renderStepEditor(); }
 function removeStep(i)           { careSteps.splice(i, 1); renderStepEditor(); }
 function setStepTime(i, t)       { careSteps[i].time = t; renderStepEditor(); }
-// Feature 4: 服務類型標籤
-function setStepService(i, s)    { careSteps[i].service = s; renderStepEditor(); }
 
 function saveCareManual() {
   const petId = document.getElementById('care-pet-id').value;
@@ -79,10 +71,13 @@ function renderCarePetGrid() {
     return;
   }
   grid.innerHTML = `<div class="pet-grid">${hasCare.map(p => `
-    <button class="pet-grid-btn ${activeCareId === p.id ? 'active' : ''}" onclick="toggleCareAccordion('${p.id}')">
-      <div class="pet-grid-name">🐾 ${esc(p.name)}</div>
-      <div class="pet-grid-steps">${p.careSteps.length} 個步驟</div>
-    </button>`).join('')}</div>`;
+    <div class="pet-grid-card ${activeCareId === p.id ? 'active' : ''}">
+      <div class="pet-grid-main" onclick="toggleCareAccordion('${p.id}')">
+        <div class="pet-grid-name">🐾 ${esc(p.name)}</div>
+        <div class="pet-grid-steps">${p.careSteps.length} 個步驟</div>
+      </div>
+      <button class="pet-grid-edit-btn" onclick="openPetModal('${p.id}')" title="編輯寵物資料">✏️</button>
+    </div>`).join('')}</div>`;
 }
 
 function toggleCareAccordion(petId) {
@@ -177,28 +172,19 @@ function renderChecklistNew(pet) {
       </div>`;
   };
 
-  // Feature 4: 依服務類型分組（僅當寵物同時有住宿與到府金額時）
-  const hasVisit = (pet.visitPrice || 0) > 0;
-  const hasStay  = (pet.stayPrice  || 0) > 0;
-  const showSections = hasVisit && hasStay;
+  const stepsHtml = steps.map(renderStep).join('') || '<div style="padding:16px;text-align:center;color:var(--muted);font-size:0.8rem">暫無照護步驟</div>';
 
-  let stepsHtml;
-  if (showSections) {
-    const visitSteps = steps.filter(s => s.service === 'visit');
-    const staySteps  = steps.filter(s => s.service === 'stay');
-    const allSteps   = steps.filter(s => !s.service || s.service === 'all');
-    const parts = [];
-    if (visitSteps.length) parts.push(`<div class="care-section-hdr">🚗 到府</div>${visitSteps.map(renderStep).join('')}`);
-    if (staySteps.length)  parts.push(`<div class="care-section-hdr">🏠 住宿</div>${staySteps.map(renderStep).join('')}`);
-    if (allSteps.length)   parts.push(`<div class="care-section-hdr">📌 通用</div>${allSteps.map(renderStep).join('')}`);
-    stepsHtml = parts.join('') || '<div style="padding:16px;text-align:center;color:var(--muted);font-size:0.8rem">暫無照護步驟</div>';
-  } else {
-    stepsHtml = steps.map(renderStep).join('');
-  }
+  const svcBadgeMap = {
+    stay:  '<span class="svc-badge svc-badge-stay">🏠 住宿</span>',
+    visit: '<span class="svc-badge svc-badge-visit">🚗 到府</span>',
+    both:  '<span class="svc-badge svc-badge-both">🏠🚗 兩種都有</span>',
+  };
+  const svcBadge = svcBadgeMap[pet.serviceType] || '';
 
   const wrap = document.getElementById('care-checklist-wrap');
   wrap.innerHTML = `
     <div style="margin-top:12px">
+      ${svcBadge ? `<div style="margin-bottom:8px">${svcBadge}</div>` : ''}
       <div class="care-prog">
         <span class="care-prog-txt">${done}/${total} 完成</span>
         <div class="care-bar-wrap"><div class="care-bar" style="width:${pct}%"></div></div>

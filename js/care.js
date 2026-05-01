@@ -105,7 +105,7 @@ function renderCarePetGrid() {
         <div class="pet-grid-main" style="text-align:center">
           <div class="pet-grid-name">🐾 ${pet ? esc(pet.name) : ''}</div>
         </div>
-        ${pet ? `<button class="pet-grid-edit-btn" style="pointer-events:all" onclick="openPetModal('${pet.id}')" title="編輯">✏️</button>` : ''}
+        ${pet ? `<button class="pet-grid-edit-btn" style="pointer-events:all" onclick="openEditPetModal('${pet.id}')" title="編輯">✏️</button>` : ''}
       </div>
     </div>`;
     return;
@@ -116,7 +116,7 @@ function renderCarePetGrid() {
         <div class="pet-grid-name">🐾 ${esc(p.name)}</div>
         <div class="pet-grid-steps">${p.careSteps.length} 個步驟</div>
       </div>
-      <button class="pet-grid-edit-btn" onclick="openPetModal('${p.id}')" title="編輯寵物資料">✏️</button>
+      <button class="pet-grid-edit-btn" onclick="openEditPetModal('${p.id}')" title="編輯寵物資料">✏️</button>
     </div>`).join('')}</div>`;
 }
 

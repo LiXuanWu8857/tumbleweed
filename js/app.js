@@ -2,7 +2,6 @@
 let sitters = [], pets = [], records = [];
 let careSteps = [];
 let dragSrcEl = null;
-let _saveTimer = null;
 
 // ══ 密碼保護 ══
 function checkLogin() {
@@ -28,12 +27,20 @@ window.onload = () => {
   }, 100);
 };
 
+// snapToArray: 同時相容舊版陣列格式與新版 object-keyed 格式
+function snapToArray(snap) {
+  const val = snap.val();
+  if (!val) return [];
+  if (Array.isArray(val)) return val.filter(Boolean);
+  return Object.values(val);
+}
+
 function initApp() {
   setupDateListeners();
   const db = window._db, r = window._ref, ov = window._onValue;
-  ov(r(db, 'sitters'), (snap) => { sitters = snap.val() || []; renderSitterList(); populateOpSelect(); populatePetSelects(); renderCarePetGrid(); });
-  ov(r(db, 'pets'),    (snap) => { pets = snap.val() || [];    renderPetList(); populatePetSelects(); renderCarePetGrid(); });
-  ov(r(db, 'records'), (snap) => { records = snap.val() || []; updateMonthFilter(); renderRecords(); });
+  ov(r(db, 'sitters'), (snap) => { sitters = snapToArray(snap); renderSitterList(); populateOpSelect(); populatePetSelects(); renderCarePetGrid(); });
+  ov(r(db, 'pets'),    (snap) => { pets = snapToArray(snap);    renderPetList(); populatePetSelects(); renderCarePetGrid(); });
+  ov(r(db, 'records'), (snap) => { records = snapToArray(snap); updateMonthFilter(); renderRecords(); });
   setDateDefaults();
 }
 
@@ -68,17 +75,11 @@ const esc = s => String(s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').
 const fmt = n => '$' + Math.round(n).toLocaleString();
 const getOp = () => document.getElementById('operatorSel').value || '未知';
 
-// ══ Firebase 儲存（防抖）══
-function saveData() {
-  if (!window._dbReady) return;
-  clearTimeout(_saveTimer);
-  _saveTimer = setTimeout(() => {
-    const db = window._db, r = window._ref, s = window._set;
-    s(r(db, 'sitters'), sitters.length ? sitters : []);
-    s(r(db, 'pets'),    pets.length ? pets : []);
-    s(r(db, 'records'), records.length ? records : []);
-  }, 400);
-}
+// ══ Firebase 原子操作 helpers ══
+// 每次只寫入／刪除單一節點，避免多人同時操作時互蓋整個陣列
+function dbSet(path, data)    { window._set(window._ref(window._db, path), data); }
+function dbUpdate(path, data) { window._update(window._ref(window._db, path), data); }
+function dbRemove(path)       { window._remove(window._ref(window._db, path)); }
 
 // ══ Tabs ══
 function switchTab(tab) {

@@ -41,7 +41,7 @@ function saveCareManual() {
   const petId = document.getElementById('care-pet-id').value;
   const pet = pets.find(p => p.id === petId); if (!pet) return;
   pet.careSteps = JSON.parse(JSON.stringify(careSteps));
-  saveData(); closeModal('careModal'); toast('✅ 照護手冊已儲存');
+  dbSet('pets/' + pet.id, pet); closeModal('careModal'); toast('✅ 照護手冊已儲存');
 }
 
 // Drag & drop

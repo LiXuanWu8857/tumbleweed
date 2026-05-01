@@ -52,13 +52,21 @@ function saveSitter() {
     bankAccount: document.getElementById('sm-bank-account').value.trim(),
     note:        document.getElementById('sm-note').value.trim()
   };
-  if (editId) { const i = sitters.findIndex(x => x.id === editId); if (i > -1) sitters[i] = { ...sitters[i], ...data }; }
-  else sitters.push({ id: makeId(), ...data });
-  saveData(); renderSitterList(); populateOpSelect(); closeModal('sitterModal'); toast('✅ 保母資料已儲存');
+  let sitter;
+  if (editId) {
+    const i = sitters.findIndex(x => x.id === editId);
+    if (i > -1) { sitters[i] = { ...sitters[i], ...data }; sitter = sitters[i]; }
+  } else {
+    sitter = { id: makeId(), ...data };
+    sitters.push(sitter);
+  }
+  if (sitter) dbSet('sitters/' + sitter.id, sitter);
+  renderSitterList(); populateOpSelect(); closeModal('sitterModal'); toast('✅ 保母資料已儲存');
 }
 
 function deleteSitter(id) {
   if (!confirm('確定刪除？')) return;
   sitters = sitters.filter(s => s.id !== id);
-  saveData(); renderSitterList(); populateOpSelect();
+  dbRemove('sitters/' + id);
+  renderSitterList(); populateOpSelect();
 }

@@ -49,17 +49,26 @@ function savePet(goToCare) {
   const name = document.getElementById('pm-name').value.trim();
   if (!name) { toast('⚠️ 請輸入寵物名稱'); return; }
   const editId = document.getElementById('pm-id').value;
+  const pctRaw = document.getElementById('pm-pct').value;
   const data = {
     name,
     stayPrice:  parseFloat(document.getElementById('pm-stay-price').value) || 0,
     visitPrice: parseFloat(document.getElementById('pm-visit-price').value) || 0,
-    pct:        parseFloat(document.getElementById('pm-pct').value) || 0.8,
+    pct:        pctRaw !== '' ? parseFloat(pctRaw) : 0.8,
     note:       document.getElementById('pm-note').value.trim()
   };
+  let pet;
   let petId = editId;
-  if (editId) { const i = pets.findIndex(x => x.id === editId); if (i > -1) pets[i] = { ...pets[i], ...data }; }
-  else { const np = { id: makeId(), ...data, careSteps: [] }; pets.push(np); petId = np.id; }
-  saveData(); renderPetList(); populatePetSelects(); closeModal('petModal');
+  if (editId) {
+    const i = pets.findIndex(x => x.id === editId);
+    if (i > -1) { pets[i] = { ...pets[i], ...data }; pet = pets[i]; }
+  } else {
+    pet = { id: makeId(), ...data, careSteps: [] };
+    pets.push(pet);
+    petId = pet.id;
+  }
+  if (pet) dbSet('pets/' + pet.id, pet);
+  renderPetList(); populatePetSelects(); closeModal('petModal');
   if (goToCare && petId) { setTimeout(() => openCareModal(petId), 200); }
   else toast('✅ 寵物資料已儲存');
 }
@@ -67,5 +76,6 @@ function savePet(goToCare) {
 function deletePet(id) {
   if (!confirm('確定刪除？')) return;
   pets = pets.filter(p => p.id !== id);
-  saveData(); renderPetList(); populatePetSelects();
+  dbRemove('pets/' + id);
+  renderPetList(); populatePetSelects();
 }

@@ -23,7 +23,7 @@ function stayCalc() {
     if (ciTime && coTime) {
       const ciH = parseInt(ciTime), coH = parseInt(coTime);
       extra = Math.abs(coH - ciH) < 12 ? 0.5 : 1;
-      extraLabel = extra === 0.5 ? '是 (½ 天)' : '否';
+      extraLabel = extra === 0.5 ? '是 (+½ 天)' : '加整天';
     }
     days = diff === 0 ? 1 : (extra > 0 ? diff + extra : diff);
     days = days % 1 === 0 ? days : parseFloat(days.toFixed(1));
@@ -80,8 +80,8 @@ function resetStay() {
   document.getElementById('s-save-copy-btn').style.display = 'none';
 }
 
-function submitStay()        { const r = buildStayRec(); if (!r) return; records.unshift(r); saveData(); updateMonthFilter(); resetStay(); toast('✅ 住宿紀錄已儲存'); }
-function submitStayAndCopy() { const r = buildStayRec(); if (!r) return; copyMsg('stay'); records.unshift(r); saveData(); updateMonthFilter(); resetStay(); toast('✅ 已儲存並複製訊息！'); }
+function submitStay()        { const r = buildStayRec(); if (!r) return; records.unshift(r); dbSet('records/' + r.id, r); updateMonthFilter(); resetStay(); toast('✅ 住宿紀錄已儲存'); }
+function submitStayAndCopy() { const r = buildStayRec(); if (!r) return; copyMsg('stay'); records.unshift(r); dbSet('records/' + r.id, r); updateMonthFilter(); resetStay(); toast('✅ 已儲存並複製訊息！'); }
 
 // ══ Visit ══
 
@@ -166,8 +166,8 @@ function resetVisit() {
   document.getElementById('v-save-copy-btn').style.display = 'none';
 }
 
-function submitVisit()        { const r = buildVisitRec(); if (!r) return; records.unshift(r); saveData(); updateMonthFilter(); resetVisit(); toast('✅ 到府紀錄已儲存'); }
-function submitVisitAndCopy() { const r = buildVisitRec(); if (!r) return; copyMsg('visit'); records.unshift(r); saveData(); updateMonthFilter(); resetVisit(); toast('✅ 已儲存並複製訊息！'); }
+function submitVisit()        { const r = buildVisitRec(); if (!r) return; records.unshift(r); dbSet('records/' + r.id, r); updateMonthFilter(); resetVisit(); toast('✅ 到府紀錄已儲存'); }
+function submitVisitAndCopy() { const r = buildVisitRec(); if (!r) return; copyMsg('visit'); records.unshift(r); dbSet('records/' + r.id, r); updateMonthFilter(); resetVisit(); toast('✅ 已儲存並複製訊息！'); }
 
 // ══ Records ══
 
@@ -185,20 +185,24 @@ function toggleRecDetail(id) {
 
 function togglePaid(id) {
   const r = records.find(x => x.id === id); if (!r) return;
-  r.paid = !r.paid; saveData(); renderRecords();
+  r.paid = !r.paid;
+  dbUpdate('records/' + id, { paid: r.paid });
+  renderRecords();
 }
 
 function deleteRecord(id) {
   if (!confirm('確定刪除？')) return;
   records = records.filter(r => r.id !== id);
-  saveData(); updateMonthFilter(); renderRecords();
+  dbRemove('records/' + id);
+  updateMonthFilter(); renderRecords();
 }
 
 function updateRecPct(id, val) {
   const r = records.find(x => x.id === id); if (!r) return;
   const pct = parseFloat(val) || 0;
   r.pct = pct; r.net = Math.round(r.total * pct); r.commission = Math.round(r.total * (1 - pct));
-  saveData(); renderRecords();
+  dbUpdate('records/' + id, { pct: r.pct, net: r.net, commission: r.commission });
+  renderRecords();
 }
 
 function copyRecMsg(id) {

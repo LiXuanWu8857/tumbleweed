@@ -7,7 +7,7 @@ function renderPetList() {
     <div class="list-item">
       <div style="flex:1;min-width:0">
         <div class="list-name">${esc(p.name)}</div>
-        <div class="list-meta">住宿 ${p.stayPrice ? fmt(p.stayPrice) + '/天' : '未設定'} · 到府 ${p.visitPrice ? fmt(p.visitPrice) + '/次' : '未設定'} · 抽成 ${p.pct ? Math.round(p.pct * 100) + '%' : '—'}</div>
+        <div class="list-meta">住宿 ${p.stayPrice ? fmt(p.stayPrice) + '/天' : '未設定'} · 安親 ${p.daycarePrice ? fmt(p.daycarePrice) + '/8hr' : '未設定'} · 到府 ${p.visitPrice ? fmt(p.visitPrice) + '/次' : '未設定'} · 抽成 ${p.pct ? Math.round(p.pct * 100) + '%' : '—'}</div>
       </div>
       <div style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;margin-left:8px">
         <button class="item-btn-teal" onclick="openCareModal('${p.id}')">📋 照護手冊</button>
@@ -33,6 +33,7 @@ function openPetModal(editId) {
     document.getElementById('petModalTitle').textContent = '編輯寵物';
     document.getElementById('pm-name').value = p.name || '';
     document.getElementById('pm-stay-price').value = p.stayPrice || '';
+    document.getElementById('pm-daycare-price').value = p.daycarePrice || '';
     document.getElementById('pm-visit-price').value = p.visitPrice || '';
     document.getElementById('pm-pct').value = p.pct || '';
     document.getElementById('pm-service-type').value = p.serviceType || '';
@@ -40,7 +41,8 @@ function openPetModal(editId) {
     document.getElementById('pm-del').innerHTML = `<button class="btn-danger" onclick="deletePet('${editId}');closeModal('petModal')">🗑 刪除寵物</button>`;
   } else {
     document.getElementById('petModalTitle').textContent = '新增寵物';
-    ['pm-name', 'pm-stay-price', 'pm-visit-price', 'pm-pct', 'pm-note'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('pm-id').value = '';
+    ['pm-name', 'pm-stay-price', 'pm-daycare-price', 'pm-visit-price', 'pm-pct', 'pm-note'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('pm-service-type').value = '';
     document.getElementById('pm-del').innerHTML = '';
   }
@@ -54,22 +56,28 @@ function savePet(goToCare) {
   const pctRaw = document.getElementById('pm-pct').value;
   const data = {
     name,
-    stayPrice:   parseFloat(document.getElementById('pm-stay-price').value) || 0,
-    visitPrice:  parseFloat(document.getElementById('pm-visit-price').value) || 0,
-    pct:         pctRaw !== '' ? parseFloat(pctRaw) : 0.8,
-    serviceType: document.getElementById('pm-service-type').value,
-    note:        document.getElementById('pm-note').value.trim()
+    stayPrice:    parseFloat(document.getElementById('pm-stay-price').value) || 0,
+    daycarePrice: parseFloat(document.getElementById('pm-daycare-price').value) || 0,
+    visitPrice:   parseFloat(document.getElementById('pm-visit-price').value) || 0,
+    pct:          pctRaw !== '' ? parseFloat(pctRaw) : 0.8,
+    serviceType:  document.getElementById('pm-service-type').value,
+    note:         document.getElementById('pm-note').value.trim()
   };
   let pet;
-  let petId = editId;
   if (editId) {
     const i = pets.findIndex(x => x.id === editId);
     if (i > -1) { pets[i] = { ...pets[i], ...data }; pet = pets[i]; }
   } else {
-    pet = { id: makeId(), ...data, careSteps: [] };
-    pets.push(pet);
-    petId = pet.id;
+    const existingIdx = pets.findIndex(p => p.name === name);
+    if (existingIdx > -1) {
+      pets[existingIdx] = { ...pets[existingIdx], ...data };
+      pet = pets[existingIdx];
+    } else {
+      pet = { id: makeId(), ...data, careSteps: [] };
+      pets.push(pet);
+    }
   }
+  const petId = pet ? pet.id : null;
   if (pet) dbSet('pets/' + pet.id, pet);
   renderPetList(); populatePetSelects(); closeModal('petModal');
   if (goToCare && petId) { setTimeout(() => openCareModal(petId), 200); }

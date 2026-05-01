@@ -52,25 +52,43 @@ function buildStayMsg(r) {
 function buildVisitMsg(r) {
   const sLabel = fmtD(r.start) + ' ' + (r.sAMPM === 'AM' ? '早上' : '晚上');
   const eLabel = fmtD(r.end)   + ' ' + (r.eAMPM === 'AM' ? '早上' : '晚上');
+  const hasExtras = r.special || r.distance;
   const unitPrice = r.price + (r.special ? 150 : 0) + (r.distance ? 100 : 0);
   const total     = Math.round(unitPrice * r.times);
   const bank = getSitterBank();
+
   const lines = [
     r.petName,
     '時段 - ' + sLabel + ' ~ ' + eLabel,
+    '共' + r.times + '次',
     '',
-    '到府費 ' + unitPrice + '$ / 次 × ' + r.times + ' 次 = ' + total + '$',
-    '',
-    '以上金額確認無誤後再付款！🙇',
-    '謝謝🌸',
-    '',
-    '———',
-    '',
-    bank.line1,
-    bank.line2 || null,
-    '',
-    '再麻煩了🙇'
+    '到府費用 ' + r.price + '$ / 次',
+    r.special  ? '特殊照護加成 150$ / 次' : null,
+    r.distance ? '遠距離加給 100$ / 次'   : null,
   ];
+
+  if (hasExtras) {
+    let breakdown = r.price + '$';
+    if (r.special)  breakdown += ' + 150$';
+    if (r.distance) breakdown += ' + 100$';
+    breakdown += ' = ' + unitPrice + '$ / 次';
+    lines.push('');
+    lines.push('單次到府金額 ' + breakdown);
+  }
+
+  lines.push('');
+  lines.push(unitPrice + '$ × ' + r.times + ' 次 = ' + total + '$');
+  lines.push('');
+  lines.push('以上金額確認無誤後再付款！🙇');
+  lines.push('謝謝🌸');
+  lines.push('');
+  lines.push('———');
+  lines.push('');
+  lines.push(bank.line1);
+  if (bank.line2) lines.push(bank.line2);
+  lines.push('');
+  lines.push('再麻煩了🙇');
+
   return lines.filter(l => l !== null).join('\n');
 }
 

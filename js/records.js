@@ -43,8 +43,11 @@ function stayCalc() {
     let extra = 0;
     if (ciTime && coTime) {
       const ciH = parseInt(ciTime), coH = parseInt(coTime);
-      extra = Math.abs(coH - ciH) < 12 ? 0.5 : 1;
-      extraLabel = extra === 0.5 ? '是 (+½ 天)' : '加整天';
+      const timeDiff = coH - ciH;
+      if (timeDiff > 0) {
+        extra = timeDiff < 12 ? 0.5 : 1;
+        extraLabel = extra === 0.5 ? '是 (+½ 天)' : '加整天';
+      }
     }
     days = diff === 0 ? 1 : (extra > 0 ? diff + extra : diff);
     days = days % 1 === 0 ? days : parseFloat(days.toFixed(1));
@@ -102,8 +105,8 @@ function resetStay() {
   const t = todayStr();
   const ci = document.getElementById('s-ci-date'), co = document.getElementById('s-co-date');
   ci.value = t; co.value = t; delete co.dataset.manual;
-  document.getElementById('s-ci-time').value = '07:00';
-  document.getElementById('s-co-time').value = '07:00';
+  document.getElementById('s-ci-time').value = '';
+  document.getElementById('s-co-time').value = '';
   ['s-price', 's-note', 's-transport-fee', 's-fresh-price'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('s-special').checked = false;
   document.getElementById('s-transport').checked = false;

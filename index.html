@@ -131,6 +131,7 @@
   </div>
   <button class="btn-primary" onclick="submitStay()">✓ 儲存住宿紀錄</button>
   <button class="btn-secondary" id="s-save-copy-btn" style="display:none" onclick="submitStayAndCopy()">✓ 儲存並複製 LINE 訊息</button>
+  <button class="btn-secondary" onclick="resetStay()">↺ 重設表單</button>
 </div></div>
 
 <!-- ══ 到府 ══ -->
@@ -196,6 +197,7 @@
   </div>
   <button class="btn-primary" onclick="submitVisit()">✓ 儲存到府紀錄</button>
   <button class="btn-secondary" id="v-save-copy-btn" style="display:none" onclick="submitVisitAndCopy()">✓ 儲存並複製 LINE 訊息</button>
+  <button class="btn-secondary" onclick="resetVisit()">↺ 重設表單</button>
 </div></div>
 
 <!-- ══ 紀錄 ══ -->
@@ -213,10 +215,11 @@
   <div class="modal">
     <div class="modal-title"><span id="sitterModalTitle">新增保母</span><button class="modal-close" onclick="closeModal('sitterModal')">✕</button></div>
     <div class="form-row"><label>保母名稱 *</label><input class="f" id="sm-name" placeholder="例：小花"></div>
-    <div class="form-row"><label>銀行名稱</label><input class="f" id="sm-bank-name" placeholder="例：國泰世華"></div>
-    <div class="form-row"><label>銀行代碼</label><input class="f" id="sm-bank-code" placeholder="例：013"></div>
-    <div class="form-row"><label>帳戶號碼</label><input class="f" id="sm-bank-account" placeholder="例：129506141811"></div>
-    <div class="form-row"><label>備註</label><textarea class="f" id="sm-note" placeholder="聯絡方式..."></textarea></div>
+    <div class="form-row"><label>銀行名稱 *</label><input class="f" id="sm-bank-name" placeholder="例：國泰世華"></div>
+    <div class="form-row"><label>銀行代碼 *</label><input class="f" id="sm-bank-code" placeholder="例：013"></div>
+    <div class="form-row"><label>帳戶號碼 *</label><input class="f" id="sm-bank-account" placeholder="例：129506141811"></div>
+    <div class="form-row"><label>電話 *</label><input class="f" type="tel" id="sm-phone" placeholder="例：0912-345-678"></div>
+    <div class="form-row"><label>備註</label><textarea class="f" id="sm-note" placeholder="其他說明..."></textarea></div>
     <input type="hidden" id="sm-id">
     <div class="form-actions">
       <button class="btn-cancel-form" onclick="closeModal('sitterModal')">取消</button>
@@ -232,6 +235,7 @@
     <div class="modal-title"><span id="petModalTitle">新增寵物</span><button class="modal-close" onclick="closeModal('petModal')">✕</button></div>
     <div class="form-row"><label>寵物名稱 *</label><input class="f" id="pm-name" placeholder="例：乖乖"></div>
     <div class="form-row"><label>住宿單價 / 天</label><input type="number" class="f" id="pm-stay-price" placeholder="0"></div>
+    <div class="form-row"><label>安親單價 / 8hr</label><input type="number" class="f" id="pm-daycare-price" placeholder="0"></div>
     <div class="form-row"><label>到府單價 / 次</label><input type="number" class="f" id="pm-visit-price" placeholder="0"></div>
     <div class="form-row"><label>預設抽成比例（例 0.8 = 80%）</label><input type="number" class="f" id="pm-pct" placeholder="0.8" step="0.05"></div>
     <div class="form-row"><label>服務類型</label>

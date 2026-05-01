@@ -7,6 +7,7 @@ function renderSitterList() {
     <div class="list-item">
       <div>
         <div class="list-name">${esc(s.name)}</div>
+        ${s.phone ? `<div class="list-meta">📞 ${esc(s.phone)}</div>` : ''}
         ${s.note ? `<div class="list-meta">${esc(s.note)}</div>` : ''}
       </div>
       <div style="display:flex;gap:6px">
@@ -27,31 +28,34 @@ function openSitterModal(editId) {
   if (editId) {
     const s = sitters.find(x => x.id === editId); if (!s) return;
     document.getElementById('sitterModalTitle').textContent = '編輯保母';
-    document.getElementById('sm-name').value = s.name || '';
-    document.getElementById('sm-bank-name').value = s.bankName || '';
-    document.getElementById('sm-bank-code').value = s.bankCode || '';
-    document.getElementById('sm-bank-account').value = s.bankAccount || '';
-    document.getElementById('sm-note').value = s.note || '';
+    document.getElementById('sm-name').value        = s.name        || '';
+    document.getElementById('sm-bank-name').value   = s.bankName    || '';
+    document.getElementById('sm-bank-code').value   = s.bankCode    || '';
+    document.getElementById('sm-bank-account').value= s.bankAccount || '';
+    document.getElementById('sm-phone').value       = s.phone       || '';
+    document.getElementById('sm-note').value        = s.note        || '';
     document.getElementById('sm-del').innerHTML = `<button class="btn-danger" onclick="deleteSitter('${editId}');closeModal('sitterModal')">🗑 刪除保母</button>`;
   } else {
     document.getElementById('sitterModalTitle').textContent = '新增保母';
-    ['sm-name', 'sm-bank-name', 'sm-bank-code', 'sm-bank-account', 'sm-note'].forEach(id => document.getElementById(id).value = '');
+    ['sm-name', 'sm-bank-name', 'sm-bank-code', 'sm-bank-account', 'sm-phone', 'sm-note'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('sm-del').innerHTML = '';
   }
   openModal('sitterModal');
 }
 
 function saveSitter() {
-  const name = document.getElementById('sm-name').value.trim();
-  if (!name) { toast('⚠️ 請輸入保母名稱'); return; }
+  const name        = document.getElementById('sm-name').value.trim();
+  const bankName    = document.getElementById('sm-bank-name').value.trim();
+  const bankCode    = document.getElementById('sm-bank-code').value.trim();
+  const bankAccount = document.getElementById('sm-bank-account').value.trim();
+  const phone       = document.getElementById('sm-phone').value.trim();
+  if (!name)        { toast('⚠️ 請輸入保母名稱'); return; }
+  if (!bankName)    { toast('⚠️ 請輸入銀行名稱'); return; }
+  if (!bankCode)    { toast('⚠️ 請輸入銀行代碼'); return; }
+  if (!bankAccount) { toast('⚠️ 請輸入帳戶號碼'); return; }
+  if (!phone)       { toast('⚠️ 請輸入電話'); return; }
   const editId = document.getElementById('sm-id').value;
-  const data = {
-    name,
-    bankName:    document.getElementById('sm-bank-name').value.trim(),
-    bankCode:    document.getElementById('sm-bank-code').value.trim(),
-    bankAccount: document.getElementById('sm-bank-account').value.trim(),
-    note:        document.getElementById('sm-note').value.trim()
-  };
+  const data   = { name, bankName, bankCode, bankAccount, phone, note: document.getElementById('sm-note').value.trim() };
   let sitter;
   if (editId) {
     const i = sitters.findIndex(x => x.id === editId);

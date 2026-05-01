@@ -99,10 +99,14 @@ function renderCarePetGrid() {
   }
   if (activeCareId) {
     const pet = pets.find(p => p.id === activeCareId);
-    grid.innerHTML = `<div class="care-pet-header">
+    grid.innerHTML = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
       <button class="care-back-btn" onclick="backToPetGrid()">← 返回</button>
-      <span class="care-pet-hdr-name">🐾 ${pet ? esc(pet.name) : ''}</span>
-      ${pet ? `<button class="pet-grid-edit-btn" onclick="openPetModal('${pet.id}')" style="border:none;background:none;padding:4px 8px">✏️</button>` : ''}
+      <div class="pet-grid-card active" style="flex:1;pointer-events:none">
+        <div class="pet-grid-main" style="text-align:center">
+          <div class="pet-grid-name">🐾 ${pet ? esc(pet.name) : ''}</div>
+        </div>
+        ${pet ? `<button class="pet-grid-edit-btn" style="pointer-events:all" onclick="openPetModal('${pet.id}')" title="編輯">✏️</button>` : ''}
+      </div>
     </div>`;
     return;
   }

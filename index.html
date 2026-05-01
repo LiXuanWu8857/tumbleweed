@@ -51,7 +51,7 @@
 <!-- ══ 寵物 ══ -->
 <div id="page-pets" class="page"><div class="container">
   <p class="sec-title">寵物名單</p>
-  <div class="card" id="petList"><div class="empty"><div class="icon">🐾</div>尚未新增寵物</div></div>
+  <div id="petList"></div>
   <button class="btn-primary" onclick="openPetModal()">＋ 新增寵物資料</button>
 </div></div>
 
@@ -215,10 +215,10 @@
   <div class="modal">
     <div class="modal-title"><span id="sitterModalTitle">新增保母</span><button class="modal-close" onclick="closeModal('sitterModal')">✕</button></div>
     <div class="form-row"><label>保母名稱 *</label><input class="f" id="sm-name" placeholder="例：小花"></div>
+    <div class="form-row"><label>電話 *</label><input class="f" type="tel" id="sm-phone" placeholder="例：0912-345-678"></div>
     <div class="form-row"><label>銀行名稱 *</label><input class="f" id="sm-bank-name" placeholder="例：國泰世華"></div>
     <div class="form-row"><label>銀行代碼 *</label><input class="f" id="sm-bank-code" placeholder="例：013"></div>
     <div class="form-row"><label>帳戶號碼 *</label><input class="f" id="sm-bank-account" placeholder="例：129506141811"></div>
-    <div class="form-row"><label>電話 *</label><input class="f" type="tel" id="sm-phone" placeholder="例：0912-345-678"></div>
     <div class="form-row"><label>備註</label><textarea class="f" id="sm-note" placeholder="其他說明..."></textarea></div>
     <input type="hidden" id="sm-id">
     <div class="form-actions">

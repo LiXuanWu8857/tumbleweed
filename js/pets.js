@@ -3,18 +3,39 @@
 function renderPetList() {
   const el = document.getElementById('petList');
   if (!pets.length) { el.innerHTML = '<div class="empty"><div class="icon">🐾</div>尚未新增寵物</div>'; return; }
-  el.innerHTML = pets.map(p => `
-    <div class="list-item">
-      <div style="flex:1;min-width:0">
-        <div class="list-name">${esc(p.name)}</div>
-        <div class="list-meta">住宿 ${p.stayPrice ? fmt(p.stayPrice) + '/天' : '未設定'} · 安親 ${p.daycarePrice ? fmt(p.daycarePrice) + '/8hr' : '未設定'} · 到府 ${p.visitPrice ? fmt(p.visitPrice) + '/次' : '未設定'} · 抽成 ${p.pct ? Math.round(p.pct * 100) + '%' : '—'}</div>
+  const svcLabel = { stay: '🏠 住宿', visit: '🚗 到府', both: '🏠🚗 兩種都有' };
+  el.innerHTML = pets.map(p => {
+    const prices = [
+      p.stayPrice    ? `住宿 ${fmt(p.stayPrice)}/天`    : null,
+      p.daycarePrice ? `安親 ${fmt(p.daycarePrice)}/8hr` : null,
+      p.visitPrice   ? `到府 ${fmt(p.visitPrice)}/次`    : null,
+    ].filter(Boolean).join(' · ') || '尚未設定價格';
+    const svc = svcLabel[p.serviceType] || '';
+    return `<div class="rec-card">
+      <div class="rec-hdr">
+        <div>
+          <div class="rec-title">🐾 ${esc(p.name)}${svc ? ` <span style="font-size:0.7rem;font-weight:400;color:var(--muted)">${svc}</span>` : ''}</div>
+          <div class="rec-meta">${prices}</div>
+        </div>
+        <div style="text-align:right;font-size:0.72rem;color:var(--muted)">抽成 ${Math.round((p.pct || 0.8) * 100)}%</div>
       </div>
-      <div style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;margin-left:8px">
-        <button class="item-btn-teal" onclick="openCareModal('${p.id}')">📋 照護手冊</button>
-        <button class="item-edit-btn" onclick="openPetModal('${p.id}')">編輯</button>
-        <button class="btn-danger" onclick="deletePet('${p.id}')">刪除</button>
+      <div class="rec-detail" id="pd-${p.id}">
+        ${p.note ? `<div class="rec-dr"><span class="rec-dl">備註</span><span class="rec-dv">${esc(p.note)}</span></div>` : ''}
+        <div style="display:flex;gap:7px;padding-top:9px;flex-wrap:wrap">
+          <button class="btn-ghost" style="flex:1;min-width:80px" onclick="openCareModal('${p.id}')">📋 照護手冊</button>
+          <button class="btn-ghost" style="flex:1;min-width:60px" onclick="openPetModal('${p.id}')">✏️ 編輯</button>
+          <button class="btn-danger" onclick="deletePet('${p.id}')">刪除</button>
+        </div>
       </div>
-    </div>`).join('');
+      <button class="rec-expand-btn" id="pb-${p.id}" onclick="togglePetDetail('${p.id}')">▸ 展開</button>
+    </div>`;
+  }).join('');
+}
+
+function togglePetDetail(id) {
+  const el = document.getElementById('pd-' + id), btn = document.getElementById('pb-' + id);
+  const open = el.classList.toggle('open');
+  btn.textContent = open ? '▾ 收起' : '▸ 展開';
 }
 
 function populatePetSelects() {

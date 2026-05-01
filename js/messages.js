@@ -17,24 +17,30 @@ function getSitterBank() {
 function buildStayMsg(r) {
   const ci = fmtD(r.ciDate) + (r.ciTime ? ' ' + r.ciTime.slice(0, 5) : '');
   const co = fmtD(r.coDate) + (r.coTime ? ' ' + r.coTime.slice(0, 5) : '');
-  const isAnChin    = r.ciDate === r.coDate;
-  const typeLabel   = isAnChin ? '安親' : '住宿';
-  const daysRounded = Math.round((r.days || 1) * 2) / 2;
-  const unitPrice   = r.price + (r.special ? 150 : 0);
-  const subtotal    = Math.round(unitPrice * daysRounded);
+  const daysRounded  = Math.round((r.days || 1) * 2) / 2;
+  const unitDayPrice = r.price + (r.special ? 150 : 0);
   const transportAmt = r.transport ? (r.transportFee || 0) : 0;
-  const freshTotal   = r.fresh ? Math.round((r.freshPrice || 0) * (r.freshMeals || 0)) : 0;
-  const grandTotal   = subtotal + transportAmt + freshTotal;
+  const freshMeals   = r.freshMeals || 0;
+  const freshTotal   = r.fresh ? Math.round((r.freshPrice || 0) * freshMeals) : 0;
+  const grandTotal   = Math.round(unitDayPrice * daysRounded) + transportAmt + freshTotal;
   const bank = getSitterBank();
+
+  const calcParts = [`${unitDayPrice} $ * ${daysRounded} 天`];
+  if (r.transport && transportAmt) calcParts.push(`${transportAmt} $`);
+  if (r.fresh && freshMeals)       calcParts.push(`${r.freshPrice || 0} $ * ${freshMeals} 餐`);
+  const calcLine = '總金額 = ' + calcParts.join(' + ') + ' = ' + grandTotal + ' $';
+
   const lines = [
     r.petName,
     '時段 - ' + ci + ' ~ ' + co,
+    '共 ' + daysRounded + ' 天',
     '',
-    typeLabel + '費 ' + unitPrice + '$ / 天 × ' + daysRounded + ' 天 = ' + subtotal + '$',
-    r.transport ? '接送服務 ' + transportAmt + '$' : null,
-    r.fresh ? '鮮食費 ' + (r.freshPrice || 0) + '$ / 餐 × ' + (r.freshMeals || 0) + ' 餐 = ' + freshTotal + '$' : null,
+    '住宿費 ' + unitDayPrice + ' $ / 天',
+    r.transport ? '接送服務 ' + transportAmt + ' $' : null,
+    r.fresh ? '鮮食費 ' + (r.freshPrice || 0) + ' $ / 餐 × ' + freshMeals + ' 餐 = ' + freshTotal + '$' : null,
     '',
-    '總計 ' + grandTotal + '$',
+    calcLine,
+    '總計 ' + grandTotal + ' $',
     '',
     '以上金額確認無誤後再付款！🙇',
     '謝謝🌸',

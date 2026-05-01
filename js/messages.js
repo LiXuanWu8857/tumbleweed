@@ -17,24 +17,24 @@ function getSitterBank() {
 function buildStayMsg(r) {
   const ci = fmtD(r.ciDate) + (r.ciTime ? ' ' + r.ciTime.slice(0, 5) : '');
   const co = fmtD(r.coDate) + (r.coTime ? ' ' + r.coTime.slice(0, 5) : '');
-  const isAnChin = r.ciDate === r.coDate;
-  const typeLabel = isAnChin ? '安親' : '住宿';
-  const daysRounded = Math.round(r.days * 2) / 2;
-  const specialAmt  = r.special ? 150 * daysRounded : 0;
-  const distanceAmt = r.distance ? 100 : 0;
+  const isAnChin    = r.ciDate === r.coDate;
+  const typeLabel   = isAnChin ? '安親' : '住宿';
+  const daysRounded = Math.round((r.days || 1) * 2) / 2;
+  const unitPrice   = r.price + (r.special ? 150 : 0);
+  const subtotal    = Math.round(unitPrice * daysRounded);
+  const transportAmt = r.transport ? (r.transportFee || 0) : 0;
+  const freshTotal   = r.fresh ? Math.round((r.freshPrice || 0) * (r.freshMeals || 0)) : 0;
+  const grandTotal   = subtotal + transportAmt + freshTotal;
   const bank = getSitterBank();
   const lines = [
     r.petName,
     '時段 - ' + ci + ' ~ ' + co,
     '',
-    typeLabel + '金額為 ' + r.price + '$ / 天',
-    r.special  ? '特殊照護 150$ / 天' : null,
-    r.distance ? '遠距離加給 100$ / 趟' : null,
-    (r.special || r.distance) ? '總金額為 ' + (r.price + (r.special ? 150 : 0)) + '$ / 天' : null,
-    (!isAnChin && r.days % 1 === 0.5) ? '含半天' : null,
-    '共 ' + r.days + ' 天',
+    typeLabel + '費 ' + unitPrice + '$ / 天 × ' + daysRounded + ' 天 = ' + subtotal + '$',
+    r.transport ? '接送服務 ' + transportAmt + '$' : null,
+    r.fresh ? '鮮食費 ' + (r.freshPrice || 0) + '$ / 餐 × ' + (r.freshMeals || 0) + ' 餐 = ' + freshTotal + '$' : null,
     '',
-    r.price + ' * ' + r.days + (r.special ? ' + 特殊照護 ' + specialAmt : '') + (r.distance ? ' + 遠距離 ' + distanceAmt : '') + ' = ' + Math.round(r.total),
+    '總計 ' + grandTotal + '$',
     '',
     '以上金額確認無誤後再付款！🙇',
     '謝謝🌸',
@@ -52,21 +52,14 @@ function buildStayMsg(r) {
 function buildVisitMsg(r) {
   const sLabel = fmtD(r.start) + ' ' + (r.sAMPM === 'AM' ? '早上' : '晚上');
   const eLabel = fmtD(r.end)   + ' ' + (r.eAMPM === 'AM' ? '早上' : '晚上');
-  const specialAmt  = r.special ? 150 * r.times : 0;
-  const distanceAmt = r.distance ? 100 : 0;
+  const unitPrice = r.price + (r.special ? 150 : 0) + (r.distance ? 100 : 0);
+  const total     = Math.round(unitPrice * r.times);
   const bank = getSitterBank();
   const lines = [
     r.petName,
     '時段 - ' + sLabel + ' ~ ' + eLabel,
     '',
-    '到府金額為 ' + r.price + '$ / 次',
-    r.special  ? '特殊照護 150$ / 次' : null,
-    r.distance ? '遠距離加給 100$ / 趟' : null,
-    (r.special || r.distance) ? '總金額為 ' + (r.price + (r.special ? 150 : 0)) + '$ / 次' : null,
-    r.tpd > 1 ? '一天 ' + r.tpd + ' 次' : null,
-    '共 ' + r.times + ' 次',
-    '',
-    r.price + ' * ' + r.times + (r.special ? ' + 特殊照護 ' + specialAmt : '') + (r.distance ? ' + 遠距離 ' + distanceAmt : '') + ' = ' + Math.round(r.total),
+    '到府費 ' + unitPrice + '$ / 次 × ' + r.times + ' 次 = ' + total + '$',
     '',
     '以上金額確認無誤後再付款！🙇',
     '謝謝🌸',

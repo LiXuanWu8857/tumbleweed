@@ -35,11 +35,13 @@ function openPetModal(editId) {
     document.getElementById('pm-stay-price').value = p.stayPrice || '';
     document.getElementById('pm-visit-price').value = p.visitPrice || '';
     document.getElementById('pm-pct').value = p.pct || '';
+    document.getElementById('pm-service-type').value = p.serviceType || '';
     document.getElementById('pm-note').value = p.note || '';
     document.getElementById('pm-del').innerHTML = `<button class="btn-danger" onclick="deletePet('${editId}');closeModal('petModal')">🗑 刪除寵物</button>`;
   } else {
     document.getElementById('petModalTitle').textContent = '新增寵物';
     ['pm-name', 'pm-stay-price', 'pm-visit-price', 'pm-pct', 'pm-note'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('pm-service-type').value = '';
     document.getElementById('pm-del').innerHTML = '';
   }
   openModal('petModal');
@@ -52,10 +54,11 @@ function savePet(goToCare) {
   const pctRaw = document.getElementById('pm-pct').value;
   const data = {
     name,
-    stayPrice:  parseFloat(document.getElementById('pm-stay-price').value) || 0,
-    visitPrice: parseFloat(document.getElementById('pm-visit-price').value) || 0,
-    pct:        pctRaw !== '' ? parseFloat(pctRaw) : 0.8,
-    note:       document.getElementById('pm-note').value.trim()
+    stayPrice:   parseFloat(document.getElementById('pm-stay-price').value) || 0,
+    visitPrice:  parseFloat(document.getElementById('pm-visit-price').value) || 0,
+    pct:         pctRaw !== '' ? parseFloat(pctRaw) : 0.8,
+    serviceType: document.getElementById('pm-service-type').value,
+    note:        document.getElementById('pm-note').value.trim()
   };
   let pet;
   let petId = editId;

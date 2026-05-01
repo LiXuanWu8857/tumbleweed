@@ -1,3 +1,58 @@
+// ══ Calendar ══
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+let calSelectedDate = null;
+
+function renderCalendar() {
+  const titleEl = document.getElementById('calTitle');
+  const gridEl  = document.getElementById('calGrid');
+  const hintEl  = document.getElementById('calHint');
+  if (!titleEl || !gridEl) return;
+
+  const today       = todayStr();
+  const firstDay    = new Date(calYear, calMonth, 1).getDay();
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const recordDates = new Set(records.map(r => r.date).filter(Boolean));
+
+  titleEl.textContent = calYear + '年' + (calMonth + 1) + '月';
+
+  const cells = [];
+  for (let i = 0; i < firstDay; i++) cells.push('<div class="cal-day empty"></div>');
+  for (let d = 1; d <= daysInMonth; d++) {
+    const ds  = calYear + '-' + String(calMonth + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+    const cls = ['cal-day', ds === today ? 'today' : '', ds === calSelectedDate ? 'selected' : ''].filter(Boolean).join(' ');
+    cells.push(`<div class="${cls}" onclick="calSelectDate('${ds}')"><span class="cal-day-num">${d}</span>${recordDates.has(ds) ? '<span class="cal-dot"></span>' : ''}</div>`);
+  }
+  gridEl.innerHTML = cells.join('');
+
+  if (calSelectedDate) {
+    const p = calSelectedDate.split('-');
+    hintEl.textContent = parseInt(p[1]) + '/' + parseInt(p[2]) + ' · 點擊取消篩選';
+    hintEl.style.display = '';
+    hintEl.onclick = () => calSelectDate(calSelectedDate);
+  } else {
+    hintEl.style.display = 'none';
+  }
+}
+
+function calPrev() {
+  calMonth--;
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  renderCalendar();
+}
+
+function calNext() {
+  calMonth++;
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  renderCalendar();
+}
+
+function calSelectDate(dateStr) {
+  calSelectedDate = calSelectedDate === dateStr ? null : dateStr;
+  renderCalendar();
+  renderRecords();
+}
+
 // ══ Helpers ══
 
 function timeToMins(t) {
@@ -352,8 +407,10 @@ function copyRecMsg(id) {
 }
 
 function renderRecords() {
+  renderCalendar();
   const fm = document.getElementById('monthFilter').value;
-  const filtered = fm ? records.filter(r => r.date && r.date.startsWith(fm)) : records;
+  let filtered = fm ? records.filter(r => r.date && r.date.startsWith(fm)) : records;
+  if (calSelectedDate) filtered = filtered.filter(r => r.date === calSelectedDate);
 
   const opMap = {};
   filtered.forEach(r => {

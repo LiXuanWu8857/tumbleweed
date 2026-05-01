@@ -45,7 +45,11 @@ function initApp() {
     pets = snapToArray(snap);
     renderPetList(); populatePetSelects(); renderCarePetGrid();
   });
-  ov(r(db, 'records'), (snap) => { records = snapToArray(snap); updateMonthFilter(); renderRecords(); });
+  let _recInit = false;
+  ov(r(db, 'records'), (snap) => {
+    if (!_recInit) { _recInit = true; migrateRecordsToIdKeys(snap); }
+    records = snapToArray(snap); updateMonthFilter(); renderRecords();
+  });
   setDateDefaults();
 }
 
@@ -59,6 +63,19 @@ function migratePetsToIdKeys(snap) {
     if (!pet || !pet.id) return;
     dbSet('pets/' + pet.id, pet);
     dbRemove('pets/' + k);
+  });
+}
+
+function migrateRecordsToIdKeys(snap) {
+  const val = snap.val();
+  if (!val || typeof val !== 'object') return;
+  const numericKeys = Object.keys(val).filter(k => /^\d+$/.test(k));
+  if (!numericKeys.length) return;
+  numericKeys.forEach(k => {
+    const rec = val[k];
+    if (!rec || !rec.id) return;
+    dbSet('records/' + rec.id, rec);
+    dbRemove('records/' + k);
   });
 }
 

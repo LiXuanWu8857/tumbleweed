@@ -19,8 +19,8 @@ function renderPetList() {
         </div>
         <div style="text-align:right;font-size:0.72rem;color:var(--muted)">抽成 ${Math.round((p.pct || 0.8) * 100)}%</div>
       </div>
+      ${p.note ? `<div style="padding:7px 15px;font-size:0.78rem;color:var(--muted);border-top:1px solid var(--border);line-height:1.5">${esc(p.note)}</div>` : ''}
       <div class="rec-detail" id="pd-${p.id}">
-        ${p.note ? `<div class="rec-dr"><span class="rec-dl">備註</span><span class="rec-dv">${esc(p.note)}</span></div>` : ''}
         ${buildPetEditLogHtml(p)}
         <div style="display:flex;gap:7px;padding-top:9px;flex-wrap:wrap">
           <button class="btn-ghost" style="flex:1;min-width:80px" onclick="openCareModal('${p.id}')">📋 照護手冊</button>

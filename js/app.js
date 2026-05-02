@@ -102,10 +102,6 @@ function setDateDefaults() {
     const el = document.getElementById(id);
     if (el && !el.value) el.value = t;
   });
-  const ciT = document.getElementById('s-ci-time');
-  const coT = document.getElementById('s-co-time');
-  if (ciT && !ciT.value) ciT.value = '07:00';
-  if (coT && !coT.value) coT.value = '07:00';
 }
 
 function setupDateListeners() {

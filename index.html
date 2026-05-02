@@ -90,19 +90,19 @@
         特殊照護 <span style="color:var(--muted);font-size:0.74rem">+$150 / 天</span>
       </label>
     </div>
-    <div class="field-row" style="display:flex;align-items:center;gap:8px">
-      <label style="font-size:0.82rem;cursor:pointer;display:flex;align-items:center;gap:8px;flex:1;min-width:0">
+    <div class="field-row">
+      <label class="field-label" style="cursor:pointer;display:flex;align-items:center;gap:6px">
         <input type="checkbox" id="s-transport" onchange="stayCalc()" style="accent-color:var(--rose);width:16px;height:16px">
         接送服務
       </label>
-      <input type="number" class="f" id="s-transport-fee" placeholder="金額" min="0" oninput="stayCalc()" style="width:88px">
+      <input type="number" class="f" id="s-transport-fee" placeholder="金額" min="0" oninput="stayCalc()">
     </div>
-    <div class="field-row" style="display:flex;align-items:center;gap:8px">
-      <label style="font-size:0.82rem;cursor:pointer;display:flex;align-items:center;gap:8px;flex:1;min-width:0">
+    <div class="field-row">
+      <label class="field-label" style="cursor:pointer;display:flex;align-items:center;gap:6px">
         <input type="checkbox" id="s-fresh" onchange="stayCalc()" style="accent-color:var(--rose);width:16px;height:16px">
-        鮮食費 <span style="color:var(--muted);font-size:0.74rem">元/餐</span>
+        鮮食費
       </label>
-      <input type="number" class="f" id="s-fresh-price" placeholder="元/餐" min="0" oninput="stayCalc()" style="width:88px">
+      <input type="number" class="f" id="s-fresh-price" placeholder="元/餐" min="0" oninput="stayCalc()">
     </div>
     <div class="field-row" id="s-fresh-meals-row" style="display:none">
       <span class="field-label">計算餐數</span>
@@ -202,6 +202,18 @@
 
 <!-- ══ 紀錄 ══ -->
 <div id="page-records" class="page"><div class="container">
+  <div class="cal-card">
+    <div class="cal-header">
+      <button class="cal-nav-btn" onclick="calPrev()">‹</button>
+      <span class="cal-title" id="calTitle"></span>
+      <button class="cal-nav-btn" onclick="calNext()">›</button>
+    </div>
+    <div class="cal-weekdays">
+      <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="cal-selected-hint" id="calHint" style="display:none"></div>
+  </div>
   <div class="filter-bar">
     <label>月份</label>
     <select class="filter-sel" id="monthFilter" onchange="renderRecords()"><option value="">全部</option></select>

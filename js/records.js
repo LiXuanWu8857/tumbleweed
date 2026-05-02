@@ -2,28 +2,138 @@
 let calYear = new Date().getFullYear();
 let calMonth = new Date().getMonth();
 let calSelectedDate = null;
+let calSitterFilter = null;
+
+function getSitterColor(opName) {
+  if (!opName) return '#e8829a';
+  const s = sitters.find(x => x.name === opName);
+  return (s && s.color) ? s.color : '#e8829a';
+}
+
+function isColorDark(hex) {
+  if (!hex || hex.length < 7) return false;
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 < 0.55;
+}
 
 function renderCalendar() {
-  const titleEl = document.getElementById('calTitle');
-  const gridEl  = document.getElementById('calGrid');
-  const hintEl  = document.getElementById('calHint');
+  const titleEl  = document.getElementById('calTitle');
+  const gridEl   = document.getElementById('calGrid');
+  const hintEl   = document.getElementById('calHint');
+  const filterEl = document.getElementById('calSitterFilter');
   if (!titleEl || !gridEl) return;
 
   const today       = todayStr();
   const firstDay    = new Date(calYear, calMonth, 1).getDay();
   const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
-  const recordDates = new Set(records.map(r => r.date).filter(Boolean));
+  const monthStr    = calYear + '-' + String(calMonth + 1).padStart(2, '0');
+  const monthStart  = monthStr + '-01';
+  const monthEnd    = monthStr + '-' + String(daysInMonth).padStart(2, '0');
 
   titleEl.textContent = calYear + '年' + (calMonth + 1) + '月';
 
-  const cells = [];
-  for (let i = 0; i < firstDay; i++) cells.push('<div class="cal-day empty"></div>');
-  for (let d = 1; d <= daysInMonth; d++) {
-    const ds  = calYear + '-' + String(calMonth + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
-    const cls = ['cal-day', ds === today ? 'today' : '', ds === calSelectedDate ? 'selected' : ''].filter(Boolean).join(' ');
-    cells.push(`<div class="${cls}" onclick="calSelectDate('${ds}')"><span class="cal-day-num">${d}</span>${recordDates.has(ds) ? '<span class="cal-dot"></span>' : ''}</div>`);
+  // Sitter filter pills
+  if (filterEl) {
+    const opNames = [...new Set(records.map(r => r.operator).filter(Boolean))];
+    if (opNames.length > 1) {
+      filterEl.innerHTML =
+        `<button class="cal-sitter-pill all-pill${!calSitterFilter ? ' active' : ''}" onclick="calSetSitterFilter(null)">全部</button>` +
+        opNames.map(name => {
+          const bg  = getSitterColor(name);
+          const txt = isColorDark(bg) ? '#fff' : '#2a1a1d';
+          return `<button class="cal-sitter-pill${calSitterFilter === name ? ' active' : ''}" style="background:${bg};color:${txt}" data-name="${esc(name)}" onclick="calSetSitterFilterFromBtn(this)"><span class="cal-sitter-dot" style="background:${isColorDark(bg) ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.2)'}"></span>${esc(name)}</button>`;
+        }).join('');
+      filterEl.style.display = '';
+    } else {
+      filterEl.style.display = 'none';
+    }
   }
-  gridEl.innerHTML = cells.join('');
+
+  // Build event list for this month
+  const calEvts = records
+    .filter(r => {
+      if (calSitterFilter && r.operator !== calSitterFilter) return false;
+      const s = r.type === 'stay' ? r.ciDate : r.start;
+      const e = r.type === 'stay' ? r.coDate : r.end;
+      return s && e && s <= monthEnd && e >= monthStart;
+    })
+    .map(r => {
+      const bg  = getSitterColor(r.operator);
+      return {
+        id:    r.id,
+        label: r.petName,
+        start: r.type === 'stay' ? r.ciDate : r.start,
+        end:   r.type === 'stay' ? r.coDate : r.end,
+        bg,
+        fg:    isColorDark(bg) ? '#fff' : '#2a1a1d'
+      };
+    });
+
+  // Build weeks
+  const numWeeks = Math.ceil((firstDay + daysInMonth) / 7);
+  let html = '';
+
+  for (let w = 0; w < numWeeks; w++) {
+    // Build this week's date strings (null = outside month)
+    const weekDs = [];
+    for (let col = 0; col < 7; col++) {
+      const d = w * 7 + col - firstDay + 1;
+      weekDs.push((d >= 1 && d <= daysInMonth) ? monthStr + '-' + String(d).padStart(2, '0') : null);
+    }
+    const validDs  = weekDs.filter(Boolean);
+    const weekStart = validDs[0];
+    const weekEnd   = validDs[validDs.length - 1];
+
+    // Day row
+    html += '<div class="cal-week"><div class="cal-day-row">';
+    weekDs.forEach(ds => {
+      if (!ds) { html += '<div class="cal-day-cell empty"></div>'; return; }
+      const isToday = ds === today, isSel = ds === calSelectedDate;
+      const dayNum  = parseInt(ds.slice(8));
+      html += `<div class="cal-day-cell${isToday ? ' today' : ''}${isSel ? ' selected' : ''}" onclick="calSelectDate('${ds}')"><span class="cal-day-num">${dayNum}</span></div>`;
+    });
+    html += '</div>';
+
+    // Events in this week
+    const wEvts = calEvts.filter(e => e.start <= weekEnd && e.end >= weekStart);
+    wEvts.sort((a, b) => a.start.localeCompare(b.start) || b.end.localeCompare(a.end));
+
+    // Lane assignment (greedy)
+    const MAX_LANES = 3;
+    const lanes = [];
+    const eLane = {};
+    wEvts.forEach(evt => {
+      let lane = 0;
+      while (lane < MAX_LANES) {
+        if (!(lanes[lane] || []).some(e => e.start <= evt.end && e.end >= evt.start)) break;
+        lane++;
+      }
+      if (lane < MAX_LANES) { if (!lanes[lane]) lanes[lane] = []; lanes[lane].push(evt); eLane[evt.id] = lane; }
+    });
+    const overflow = wEvts.filter(e => eLane[e.id] === undefined).length;
+
+    for (let lane = 0; lane < lanes.length; lane++) {
+      html += '<div class="cal-event-lane">';
+      (lanes[lane] || []).forEach(evt => {
+        const cL = evt.start < weekStart;
+        const cR = evt.end   > weekEnd;
+        const c1 = cL ? 0 : weekDs.indexOf(evt.start);
+        const c2 = cR ? 6 : weekDs.indexOf(evt.end);
+        const span = c2 - c1 + 1;
+        const lbl  = cL ? ('↵ ' + evt.label) : evt.label;
+        const cls  = `cal-event-bar${cL ? ' no-left' : ''}${cR ? ' no-right' : ''}`;
+        html += `<div class="${cls}" style="grid-column:${c1 + 1}/span ${span};background:${evt.bg};color:${evt.fg}" onclick="calSelectDate('${evt.start}')" title="${esc(evt.label)}">${esc(lbl)}</div>`;
+      });
+      html += '</div>';
+    }
+
+    if (overflow > 0) html += `<div class="cal-overflow">+${overflow} 更多</div>`;
+    html += '</div>'; // cal-week
+  }
+
+  gridEl.innerHTML = html;
 
   if (calSelectedDate) {
     const p = calSelectedDate.split('-');
@@ -35,20 +145,24 @@ function renderCalendar() {
   }
 }
 
-function calPrev() {
-  calMonth--;
-  if (calMonth < 0) { calMonth = 11; calYear--; }
-  renderCalendar();
-}
-
-function calNext() {
-  calMonth++;
-  if (calMonth > 11) { calMonth = 0; calYear++; }
-  renderCalendar();
-}
+function calPrev() { calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; } renderCalendar(); }
+function calNext() { calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; } renderCalendar(); }
 
 function calSelectDate(dateStr) {
   calSelectedDate = calSelectedDate === dateStr ? null : dateStr;
+  renderCalendar();
+  renderRecords();
+}
+
+function calSetSitterFilter(name) {
+  calSitterFilter = name;
+  renderCalendar();
+  renderRecords();
+}
+
+function calSetSitterFilterFromBtn(btn) {
+  const name = btn.dataset.name;
+  calSitterFilter = calSitterFilter === name ? null : name;
   renderCalendar();
   renderRecords();
 }
@@ -442,7 +556,8 @@ function renderRecords() {
   renderCalendar();
   const fm = document.getElementById('monthFilter').value;
   let filtered = fm ? records.filter(r => r.date && r.date.startsWith(fm)) : records;
-  if (calSelectedDate) filtered = filtered.filter(r => r.date === calSelectedDate);
+  if (calSelectedDate)  filtered = filtered.filter(r => r.date === calSelectedDate);
+  if (calSitterFilter)  filtered = filtered.filter(r => r.operator === calSitterFilter);
 
   const opMap = {};
   filtered.forEach(r => {
@@ -480,7 +595,8 @@ function renderRecords() {
       const dateMeta   = r.type === 'stay' ? `${fmtD(r.ciDate)} → ${fmtD(r.coDate)}` : `${fmtD(r.start)} → ${fmtD(r.end)}`;
       const qty        = r.type === 'stay' ? r.days + '天' : r.times + '次';
       const pctLabel   = Math.round((r.pct || 0) * 100) + '%';
-      return `<div class="rec-card">
+      const sBg        = getSitterColor(r.operator);
+      return `<div class="rec-card" style="background:${sBg}18;border-left:3px solid ${sBg}">
         <div class="rec-hdr">
           <div>
             <div class="rec-title">${esc(r.petName)} · ${typeLabel} · <span style="font-size:0.75rem;font-weight:500;color:${r.paid ? 'var(--green)' : 'var(--danger)'}">${r.paid ? '✓ 已付款' : '✗ 未付款'}</span></div>

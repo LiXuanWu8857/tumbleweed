@@ -208,6 +208,7 @@
       <span class="cal-title" id="calTitle"></span>
       <button class="cal-nav-btn" onclick="calNext()">›</button>
     </div>
+    <div id="calSitterFilter" class="cal-sitter-filter" style="display:none"></div>
     <div class="cal-weekdays">
       <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
     </div>
@@ -232,6 +233,7 @@
     <div class="form-row"><label>銀行代碼 *</label><input class="f" id="sm-bank-code" placeholder="例：013"></div>
     <div class="form-row"><label>帳戶號碼 *</label><input class="f" id="sm-bank-account" placeholder="例：129506141811"></div>
     <div class="form-row"><label>備註</label><textarea class="f" id="sm-note" placeholder="其他說明..."></textarea></div>
+    <div class="form-row"><label>代表色</label><div style="display:flex;align-items:center;gap:10px"><input type="color" id="sm-color" value="#e8829a" style="width:40px;height:32px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;padding:2px"><span style="font-size:0.74rem;color:var(--muted)">行事曆顯示顏色</span></div></div>
     <input type="hidden" id="sm-id">
     <div class="form-actions">
       <button class="btn-cancel-form" onclick="closeModal('sitterModal')">取消</button>

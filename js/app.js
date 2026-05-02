@@ -41,7 +41,7 @@ function initApp() {
   let _sitInit = false;
   ov(r(db, 'sitters'), (snap) => {
     if (!_sitInit) { _sitInit = true; migrateSittersToIdKeys(snap); }
-    sitters = snapToArray(snap); renderSitterList(); populateOpSelect(); populatePetSelects(); renderCarePetGrid();
+    sitters = snapToArray(snap); renderSitterList(); populateOpSelect(); populatePetSelects(); renderCarePetGrid(); renderCalendar();
   });
   let _petInit = false;
   ov(r(db, 'pets'), (snap) => {
@@ -52,7 +52,7 @@ function initApp() {
   let _recInit = false;
   ov(r(db, 'records'), (snap) => {
     if (!_recInit) { _recInit = true; migrateRecordsToIdKeys(snap); }
-    records = snapToArray(snap); updateMonthFilter(); renderRecords();
+    records = snapToArray(snap); updateMonthFilter(); renderRecords(); renderCalendar();
   });
   setDateDefaults();
 }
@@ -137,6 +137,7 @@ function switchTab(tab) {
   });
   if (['stay', 'visit', 'care'].includes(tab)) populatePetSelects();
   if (tab === 'care') renderCarePetGrid();
+  if (tab === 'sitters') renderCalendar();
   if (tab === 'records') { updateMonthFilter(); renderRecords(); }
 }
 

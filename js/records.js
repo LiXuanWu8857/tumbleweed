@@ -34,10 +34,10 @@ function renderCalendar() {
 
   titleEl.textContent = calYear + '年' + (calMonth + 1) + '月';
 
-  // Sitter filter pills
+  // Sitter filter pills — show when any operators have records
   if (filterEl) {
     const opNames = [...new Set(records.map(r => r.operator).filter(Boolean))];
-    if (opNames.length > 1) {
+    if (opNames.length >= 1) {
       filterEl.innerHTML =
         `<button class="cal-sitter-pill all-pill${!calSitterFilter ? ' active' : ''}" onclick="calSetSitterFilter(null)">全部</button>` +
         opNames.map(name => {
@@ -60,7 +60,7 @@ function renderCalendar() {
       return s && e && s <= monthEnd && e >= monthStart;
     })
     .map(r => {
-      const bg  = getSitterColor(r.operator);
+      const bg = getSitterColor(r.operator);
       return {
         id:    r.id,
         label: r.petName,
@@ -76,15 +76,19 @@ function renderCalendar() {
   let html = '';
 
   for (let w = 0; w < numWeeks; w++) {
-    // Build this week's date strings (null = outside month)
+    // weekDs[col] = 'YYYY-MM-DD' if within month, else null
     const weekDs = [];
     for (let col = 0; col < 7; col++) {
       const d = w * 7 + col - firstDay + 1;
       weekDs.push((d >= 1 && d <= daysInMonth) ? monthStr + '-' + String(d).padStart(2, '0') : null);
     }
-    const validDs  = weekDs.filter(Boolean);
+    const validDs   = weekDs.filter(Boolean);
     const weekStart = validDs[0];
     const weekEnd   = validDs[validDs.length - 1];
+    // First/last valid column indices (to clip event bars to month days only)
+    const firstValidIdx = weekDs.findIndex(d => d !== null);
+    let   lastValidIdx  = 6;
+    for (let i = 6; i >= 0; i--) { if (weekDs[i] !== null) { lastValidIdx = i; break; } }
 
     // Day row
     html += '<div class="cal-week"><div class="cal-day-row">';
@@ -96,52 +100,53 @@ function renderCalendar() {
     });
     html += '</div>';
 
-    // Events in this week
+    // Events active this week
     const wEvts = calEvts.filter(e => e.start <= weekEnd && e.end >= weekStart);
     wEvts.sort((a, b) => a.start.localeCompare(b.start) || b.end.localeCompare(a.end));
 
-    // Lane assignment (greedy)
-    const MAX_LANES = 3;
+    // Unlimited lane assignment (greedy)
     const lanes = [];
     const eLane = {};
     wEvts.forEach(evt => {
       let lane = 0;
-      while (lane < MAX_LANES) {
-        if (!(lanes[lane] || []).some(e => e.start <= evt.end && e.end >= evt.start)) break;
-        lane++;
-      }
-      if (lane < MAX_LANES) { if (!lanes[lane]) lanes[lane] = []; lanes[lane].push(evt); eLane[evt.id] = lane; }
+      while ((lanes[lane] || []).some(e => e.start <= evt.end && e.end >= evt.start)) lane++;
+      if (!lanes[lane]) lanes[lane] = [];
+      lanes[lane].push(evt);
+      eLane[evt.id] = lane;
     });
-    const overflow = wEvts.filter(e => eLane[e.id] === undefined).length;
 
     for (let lane = 0; lane < lanes.length; lane++) {
       html += '<div class="cal-event-lane">';
       (lanes[lane] || []).forEach(evt => {
         const cL = evt.start < weekStart;
         const cR = evt.end   > weekEnd;
-        const c1 = cL ? 0 : weekDs.indexOf(evt.start);
-        const c2 = cR ? 6 : weekDs.indexOf(evt.end);
-        const span = c2 - c1 + 1;
-        const lbl  = cL ? ('↵ ' + evt.label) : evt.label;
-        const cls  = `cal-event-bar${cL ? ' no-left' : ''}${cR ? ' no-right' : ''}`;
-        html += `<div class="${cls}" style="grid-column:${c1 + 1}/span ${span};background:${evt.bg};color:${evt.fg}" onclick="calSelectDate('${evt.start}')" title="${esc(evt.label)}">${esc(lbl)}</div>`;
+        // Clip to valid month cells only
+        const c1 = cL ? firstValidIdx : weekDs.indexOf(evt.start);
+        const c2 = cR ? lastValidIdx  : weekDs.indexOf(evt.end);
+        const safeC1 = Math.max(0, c1 < 0 ? firstValidIdx : c1);
+        const safeC2 = Math.min(6, c2 < 0 ? lastValidIdx  : c2);
+        const span   = Math.max(1, safeC2 - safeC1 + 1);
+        const lbl    = cL ? ('↵ ' + evt.label) : evt.label;
+        const cls    = `cal-event-bar${cL ? ' no-left' : ''}${cR ? ' no-right' : ''}`;
+        html += `<div class="${cls}" style="grid-column:${safeC1 + 1}/span ${span};background:${evt.bg};color:${evt.fg}" title="${esc(evt.label)}">${esc(lbl)}</div>`;
       });
       html += '</div>';
     }
 
-    if (overflow > 0) html += `<div class="cal-overflow">+${overflow} 更多</div>`;
     html += '</div>'; // cal-week
   }
 
   gridEl.innerHTML = html;
 
-  if (calSelectedDate) {
-    const p = calSelectedDate.split('-');
-    hintEl.textContent = parseInt(p[1]) + '/' + parseInt(p[2]) + ' · 點擊取消篩選';
-    hintEl.style.display = '';
-    hintEl.onclick = () => calSelectDate(calSelectedDate);
-  } else {
-    hintEl.style.display = 'none';
+  if (hintEl) {
+    if (calSelectedDate) {
+      const p = calSelectedDate.split('-');
+      hintEl.textContent = parseInt(p[1]) + '/' + parseInt(p[2]) + ' · 點擊取消';
+      hintEl.style.display = '';
+      hintEl.onclick = () => calSelectDate(calSelectedDate);
+    } else {
+      hintEl.style.display = 'none';
+    }
   }
 }
 
@@ -151,20 +156,17 @@ function calNext() { calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; }
 function calSelectDate(dateStr) {
   calSelectedDate = calSelectedDate === dateStr ? null : dateStr;
   renderCalendar();
-  renderRecords();
 }
 
 function calSetSitterFilter(name) {
   calSitterFilter = name;
   renderCalendar();
-  renderRecords();
 }
 
 function calSetSitterFilterFromBtn(btn) {
   const name = btn.dataset.name;
   calSitterFilter = calSitterFilter === name ? null : name;
   renderCalendar();
-  renderRecords();
 }
 
 // ══ Helpers ══
@@ -545,19 +547,16 @@ function buildEditLogHtml(r) {
 function copyRecMsg(id) {
   const r = records.find(x => x.id === id); if (!r) return;
   const msg = r.type === 'stay'
-    ? buildStayMsg({ petName: r.petName, ciDate: r.ciDate, ciTime: r.ciTime, coDate: r.coDate, coTime: r.coTime, days: r.days, price: r.price, total: r.total, special: r.special, transport: r.transport, transportFee: r.transportFee, fresh: r.fresh, freshPrice: r.freshPrice, freshMeals: r.freshMeals })
-    : buildVisitMsg({ petName: r.petName, start: r.start, end: r.end, sAMPM: r.startAMPM, eAMPM: r.endAMPM, tpd: r.timesDay, times: r.times, price: r.price, total: r.total, special: r.special, distance: r.distance });
+    ? buildStayMsg({ operator: r.operator, petName: r.petName, ciDate: r.ciDate, ciTime: r.ciTime, coDate: r.coDate, coTime: r.coTime, days: r.days, price: r.price, total: r.total, special: r.special, transport: r.transport, transportFee: r.transportFee, fresh: r.fresh, freshPrice: r.freshPrice, freshMeals: r.freshMeals })
+    : buildVisitMsg({ operator: r.operator, petName: r.petName, start: r.start, end: r.end, sAMPM: r.startAMPM, eAMPM: r.endAMPM, tpd: r.timesDay, times: r.times, price: r.price, total: r.total, special: r.special, distance: r.distance });
   navigator.clipboard.writeText(msg)
     .then(() => toast('✅ 訊息已複製！'))
     .catch(() => { const ta = document.createElement('textarea'); ta.value = msg; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); toast('✅ 訊息已複製！'); });
 }
 
 function renderRecords() {
-  renderCalendar();
   const fm = document.getElementById('monthFilter').value;
   let filtered = fm ? records.filter(r => r.date && r.date.startsWith(fm)) : records;
-  if (calSelectedDate)  filtered = filtered.filter(r => r.date === calSelectedDate);
-  if (calSitterFilter)  filtered = filtered.filter(r => r.operator === calSitterFilter);
 
   const opMap = {};
   filtered.forEach(r => {

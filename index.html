@@ -44,8 +44,28 @@
 <!-- ══ 保母 ══ -->
 <div id="page-sitters" class="page active"><div class="container">
   <p class="sec-title">保母名單</p>
-  <div class="card" id="sitterList"><div class="empty"><div class="icon">👤</div>尚未新增保母</div></div>
+  <div class="card">
+    <div class="field-row">
+      <span class="field-label">選擇保母</span>
+      <select class="f" id="sitterSel" onchange="onSitterSelChange()"><option value="">— 請選擇 —</option></select>
+    </div>
+  </div>
+  <div id="sitterDetail" style="display:none"></div>
   <button class="btn-primary" onclick="openSitterModal()">＋ 新增保母</button>
+  <p class="sec-title">預約行事曆</p>
+  <div class="cal-card">
+    <div class="cal-header">
+      <button class="cal-nav-btn" onclick="calPrev()">‹</button>
+      <span class="cal-title" id="calTitle"></span>
+      <button class="cal-nav-btn" onclick="calNext()">›</button>
+    </div>
+    <div id="calSitterFilter" class="cal-sitter-filter" style="display:none"></div>
+    <div class="cal-weekdays">
+      <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="cal-selected-hint" id="calHint" style="display:none"></div>
+  </div>
 </div></div>
 
 <!-- ══ 寵物 ══ -->
@@ -202,19 +222,6 @@
 
 <!-- ══ 紀錄 ══ -->
 <div id="page-records" class="page"><div class="container">
-  <div class="cal-card">
-    <div class="cal-header">
-      <button class="cal-nav-btn" onclick="calPrev()">‹</button>
-      <span class="cal-title" id="calTitle"></span>
-      <button class="cal-nav-btn" onclick="calNext()">›</button>
-    </div>
-    <div id="calSitterFilter" class="cal-sitter-filter" style="display:none"></div>
-    <div class="cal-weekdays">
-      <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
-    </div>
-    <div class="cal-grid" id="calGrid"></div>
-    <div class="cal-selected-hint" id="calHint" style="display:none"></div>
-  </div>
   <div class="filter-bar">
     <label>月份</label>
     <select class="filter-sel" id="monthFilter" onchange="renderRecords()"><option value="">全部</option></select>
@@ -272,7 +279,7 @@
 </div>
 
 <!-- ══ Edit Pet Modal ══ -->
-<div class="modal-bg" id="editPetModal" onclick="closeBg('editPetModal',event)">
+<div class="modal-bg" id="editPetModal">
   <div class="modal">
     <div class="modal-title">
       <span>✏️ 編輯寵物資料</span>

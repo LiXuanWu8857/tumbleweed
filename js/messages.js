@@ -6,8 +6,8 @@ function fmtD(d) {
   return parseInt(p[1]) + '/' + parseInt(p[2]);
 }
 
-function getSitterBank() {
-  const op = getOp();
+function getSitterBank(opName) {
+  const op = opName != null ? opName : getOp();
   const s = sitters.find(x => x.name === op);
   if (!s || !s.bankAccount) return { line1: '可以Line pay 或者是匯款', line2: '' };
   const bankLabel = (s.bankName || '') + (s.bankCode ? ' ' + s.bankCode : '');
@@ -23,7 +23,7 @@ function buildStayMsg(r) {
   const freshMeals   = r.freshMeals || 0;
   const freshTotal   = r.fresh ? Math.round((r.freshPrice || 0) * freshMeals) : 0;
   const grandTotal   = Math.round(unitDayPrice * daysRounded) + transportAmt + freshTotal;
-  const bank = getSitterBank();
+  const bank = getSitterBank(r.operator);
 
   const calcParts = r.isDaycare
     ? [`${unitDayPrice} $`]
@@ -63,7 +63,7 @@ function buildVisitMsg(r) {
   const hasExtras = r.special || r.distance;
   const unitPrice = r.price + (r.special ? 150 : 0) + (r.distance ? 100 : 0);
   const total     = Math.round(unitPrice * r.times);
-  const bank = getSitterBank();
+  const bank = getSitterBank(r.operator);
 
   const lines = [
     r.petName,

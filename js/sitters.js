@@ -1,19 +1,38 @@
 // ══ Sitters ══
 
 function renderSitterList() {
-  const el = document.getElementById('sitterList');
-  if (!sitters.length) { el.innerHTML = '<div class="empty"><div class="icon">👤</div>尚未新增保母</div>'; return; }
-  el.innerHTML = sitters.map(s => `
-    <div class="list-item">
-      <div>
-        <div class="list-name">${esc(s.name)}</div>
-        ${s.note ? `<div class="list-meta">${esc(s.note)}</div>` : ''}
-      </div>
-      <div style="display:flex;gap:6px">
-        <button class="item-edit-btn" onclick="openSitterModal('${s.id}')">編輯</button>
-        <button class="btn-danger" onclick="deleteSitter('${s.id}')">刪除</button>
-      </div>
-    </div>`).join('');
+  const sel = document.getElementById('sitterSel');
+  if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— 請選擇 —</option>' +
+    sitters.map(s => `<option value="${s.id}" ${s.id === cur ? 'selected' : ''}>${esc(s.name)}</option>`).join('');
+  onSitterSelChange();
+}
+
+function onSitterSelChange() {
+  const id  = document.getElementById('sitterSel').value;
+  const det = document.getElementById('sitterDetail');
+  if (!id) { det.style.display = 'none'; det.innerHTML = ''; return; }
+  const s = sitters.find(x => x.id === id);
+  if (!s) { det.style.display = 'none'; return; }
+  const opSel = document.getElementById('operatorSel');
+  if (opSel) opSel.value = s.name;
+  const dot = s.color
+    ? `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${s.color};border:1px solid rgba(0,0,0,0.1);margin-right:5px;vertical-align:middle"></span>`
+    : '';
+  det.innerHTML = `<div class="card"><div class="list-item">
+    <div>
+      <div class="list-name">${dot}${esc(s.name)}</div>
+      ${s.phone    ? `<div class="list-meta">📞 ${esc(s.phone)}</div>` : ''}
+      ${s.bankName ? `<div class="list-meta">🏦 ${esc(s.bankName)}${s.bankCode ? ' ' + esc(s.bankCode) : ''} · ${esc(s.bankAccount || '')}</div>` : ''}
+      ${s.note     ? `<div class="list-meta">${esc(s.note)}</div>` : ''}
+    </div>
+    <div style="display:flex;gap:6px;flex-shrink:0">
+      <button class="item-edit-btn" onclick="openSitterModal('${s.id}')">編輯</button>
+      <button class="btn-danger" onclick="deleteSitter('${s.id}')">刪除</button>
+    </div>
+  </div></div>`;
+  det.style.display = '';
 }
 
 function populateOpSelect() {

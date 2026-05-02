@@ -22,7 +22,7 @@
 
 <header>
   <div class="header-inner">
-    <div class="logo"><span style="font-size:1.4rem">🌿</span><span class="logo-text">風滾草記帳本</span></div>
+    <div class="logo" onclick="location.reload(true)" style="cursor:pointer" title="強制重新整理"><img src="https://www.doing-housework.com/store_image/tumble/L175508098235.png" alt="風滾草" style="height:44px;width:44px;object-fit:contain;border-radius:6px"><span class="logo-text">風滾草記帳本</span></div>
     <div class="op-wrap">
       <label>輸入者</label>
       <select class="op-sel" id="operatorSel"><option value="">— 選擇 —</option></select>
@@ -300,7 +300,7 @@
 </div>
 
 <!-- ══ Care Manual Modal ══ -->
-<div class="modal-bg" id="careModal" onclick="closeBg('careModal',event)">
+<div class="modal-bg" id="careModal">
   <div class="modal" style="padding:0;display:flex;flex-direction:column;max-height:88vh;">
     <div style="padding:22px 18px 0;flex-shrink:0;background:#fff;border-radius:22px 22px 0 0;z-index:10;">
       <div class="modal-title"><span id="careModalTitle">照護手冊</span><button class="modal-close" onclick="closeModal('careModal')">✕</button></div>

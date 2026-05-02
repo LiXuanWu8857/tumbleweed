@@ -2,36 +2,141 @@
 let calYear = new Date().getFullYear();
 let calMonth = new Date().getMonth();
 let calSelectedDate = null;
+let calSitterFilter = null;
+
+function getSitterColor(opName) {
+  if (!opName) return '#e8829a';
+  const s = sitters.find(x => x.name === opName);
+  return (s && s.color) ? s.color : '#e8829a';
+}
+
+function isColorDark(hex) {
+  if (!hex || hex.length < 7) return false;
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 < 0.55;
+}
 
 function renderCalendar() {
-  const titleEl = document.getElementById('calTitle');
-  const gridEl  = document.getElementById('calGrid');
-  const hintEl  = document.getElementById('calHint');
+  const titleEl  = document.getElementById('calTitle');
+  const gridEl   = document.getElementById('calGrid');
+  const hintEl   = document.getElementById('calHint');
+  const filterEl = document.getElementById('calSitterFilter');
   if (!titleEl || !gridEl) return;
 
   const today       = todayStr();
   const firstDay    = new Date(calYear, calMonth, 1).getDay();
   const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
-  const recordDates = new Set(records.map(r => r.date).filter(Boolean));
+  const monthStr    = calYear + '-' + String(calMonth + 1).padStart(2, '0');
+  const monthStart  = monthStr + '-01';
+  const monthEnd    = monthStr + '-' + String(daysInMonth).padStart(2, '0');
 
   titleEl.textContent = calYear + '年' + (calMonth + 1) + '月';
 
-  const cells = [];
-  for (let i = 0; i < firstDay; i++) cells.push('<div class="cal-day empty"></div>');
-  for (let d = 1; d <= daysInMonth; d++) {
-    const ds  = calYear + '-' + String(calMonth + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
-    const cls = ['cal-day', ds === today ? 'today' : '', ds === calSelectedDate ? 'selected' : ''].filter(Boolean).join(' ');
-    cells.push(`<div class="${cls}" onclick="calSelectDate('${ds}')"><span class="cal-day-num">${d}</span>${recordDates.has(ds) ? '<span class="cal-dot"></span>' : ''}</div>`);
+  if (filterEl) {
+    const opNames = [...new Set(records.map(r => r.operator).filter(Boolean))];
+    if (opNames.length >= 1) {
+      filterEl.innerHTML =
+        `<button class="cal-sitter-pill all-pill${!calSitterFilter ? ' active' : ''}" onclick="calSetSitterFilter(null)">全部</button>` +
+        opNames.map(name => {
+          const bg  = getSitterColor(name);
+          const txt = isColorDark(bg) ? '#fff' : '#2a1a1d';
+          return `<button class="cal-sitter-pill${calSitterFilter === name ? ' active' : ''}" style="background:${bg};color:${txt}" data-name="${esc(name)}" onclick="calSetSitterFilterFromBtn(this)"><span class="cal-sitter-dot" style="background:${isColorDark(bg) ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.2)'}"></span>${esc(name)}</button>`;
+        }).join('');
+      filterEl.style.display = '';
+    } else {
+      filterEl.style.display = 'none';
+    }
   }
-  gridEl.innerHTML = cells.join('');
 
-  if (calSelectedDate) {
-    const p = calSelectedDate.split('-');
-    hintEl.textContent = parseInt(p[1]) + '/' + parseInt(p[2]) + ' · 點擊取消篩選';
-    hintEl.style.display = '';
-    hintEl.onclick = () => calSelectDate(calSelectedDate);
-  } else {
-    hintEl.style.display = 'none';
+  const calEvts = records
+    .filter(r => {
+      if (calSitterFilter && r.operator !== calSitterFilter) return false;
+      const s = r.type === 'stay' ? r.ciDate : r.start;
+      const e = r.type === 'stay' ? r.coDate : r.end;
+      return s && e && s <= monthEnd && e >= monthStart;
+    })
+    .map(r => {
+      const bg = getSitterColor(r.operator);
+      return {
+        id:    r.id,
+        label: r.petName,
+        start: r.type === 'stay' ? r.ciDate : r.start,
+        end:   r.type === 'stay' ? r.coDate : r.end,
+        bg,
+        fg:    isColorDark(bg) ? '#fff' : '#2a1a1d'
+      };
+    });
+
+  const numWeeks = Math.ceil((firstDay + daysInMonth) / 7);
+  const allWeekData = [];
+  for (let w = 0; w < numWeeks; w++) {
+    const weekDs = [];
+    for (let col = 0; col < 7; col++) {
+      const d = w * 7 + col - firstDay + 1;
+      weekDs.push((d >= 1 && d <= daysInMonth) ? monthStr + '-' + String(d).padStart(2, '0') : null);
+    }
+    const validDs       = weekDs.filter(Boolean);
+    const weekStart     = validDs[0];
+    const weekEnd       = validDs[validDs.length - 1];
+    const firstValidIdx = weekDs.findIndex(d => d !== null);
+    let   lastValidIdx  = 6;
+    for (let i = 6; i >= 0; i--) { if (weekDs[i] !== null) { lastValidIdx = i; break; } }
+    const wEvts = calEvts.filter(e => e.start <= weekEnd && e.end >= weekStart);
+    wEvts.sort((a, b) => a.start.localeCompare(b.start) || b.end.localeCompare(a.end));
+    const lanes = [];
+    wEvts.forEach(evt => {
+      let lane = 0;
+      while ((lanes[lane] || []).some(e => e.start <= evt.end && e.end >= evt.start)) lane++;
+      if (!lanes[lane]) lanes[lane] = [];
+      lanes[lane].push(evt);
+    });
+    allWeekData.push({ weekDs, weekStart, weekEnd, firstValidIdx, lastValidIdx, lanes });
+  }
+  const globalMaxLanes = Math.max(0, ...allWeekData.map(wd => wd.lanes.length));
+  const rowTpl = '30px' + (globalMaxLanes > 0 ? ' repeat(' + globalMaxLanes + ',18px)' : '');
+
+  let html = '';
+  for (const { weekDs, weekStart, weekEnd, firstValidIdx, lastValidIdx, lanes } of allWeekData) {
+    html += `<div class="cal-week-grid" style="grid-template-rows:${rowTpl}">`;
+    weekDs.forEach((ds, col) => {
+      if (!ds) {
+        html += `<div class="cal-day-cell empty" style="grid-row:1;grid-column:${col + 1}"></div>`;
+        return;
+      }
+      const isToday = ds === today, isSel = ds === calSelectedDate;
+      const dayNum  = parseInt(ds.slice(8));
+      html += `<div class="cal-day-cell${isToday ? ' today' : ''}${isSel ? ' selected' : ''}" style="grid-row:1;grid-column:${col + 1}" onclick="calSelectDate('${ds}')"><span class="cal-day-num">${dayNum}</span></div>`;
+    });
+    for (let lane = 0; lane < lanes.length; lane++) {
+      (lanes[lane] || []).forEach(evt => {
+        const cL     = evt.start < weekStart;
+        const cR     = evt.end   > weekEnd;
+        const c1     = cL ? firstValidIdx : weekDs.indexOf(evt.start);
+        const c2     = cR ? lastValidIdx  : weekDs.indexOf(evt.end);
+        const safeC1 = Math.max(0, c1 < 0 ? firstValidIdx : c1);
+        const safeC2 = Math.min(6, c2 < 0 ? lastValidIdx  : c2);
+        const span   = Math.max(1, safeC2 - safeC1 + 1);
+        const lbl    = cL ? ('↵ ' + evt.label) : evt.label;
+        const cls    = `cal-event-bar${cL ? ' no-left' : ''}${cR ? ' no-right' : ''}`;
+        html += `<div class="${cls}" style="grid-row:${lane + 2};grid-column:${safeC1 + 1}/span ${span};background:${evt.bg};color:${evt.fg}" title="${esc(evt.label)}">${esc(lbl)}</div>`;
+      });
+    }
+    html += '</div>';
+  }
+
+  gridEl.innerHTML = html;
+
+  if (hintEl) {
+    if (calSelectedDate) {
+      const p = calSelectedDate.split('-');
+      hintEl.textContent = parseInt(p[1]) + '/' + parseInt(p[2]) + ' · 點擊取消';
+      hintEl.style.display = '';
+      hintEl.onclick = () => calSelectDate(calSelectedDate);
+    } else {
+      hintEl.style.display = 'none';
+    }
   }
 }
 
@@ -399,8 +504,8 @@ function buildEditLogHtml(r) {
 function copyRecMsg(id) {
   const r = records.find(x => x.id === id); if (!r) return;
   const msg = r.type === 'stay'
-    ? buildStayMsg({ petName: r.petName, ciDate: r.ciDate, ciTime: r.ciTime, coDate: r.coDate, coTime: r.coTime, days: r.days, price: r.price, total: r.total, special: r.special, transport: r.transport, transportFee: r.transportFee, fresh: r.fresh, freshPrice: r.freshPrice, freshMeals: r.freshMeals })
-    : buildVisitMsg({ petName: r.petName, start: r.start, end: r.end, sAMPM: r.startAMPM, eAMPM: r.endAMPM, tpd: r.timesDay, times: r.times, price: r.price, total: r.total, special: r.special, distance: r.distance });
+    ? buildStayMsg({ operator: r.operator, petName: r.petName, ciDate: r.ciDate, ciTime: r.ciTime, coDate: r.coDate, coTime: r.coTime, days: r.days, price: r.price, total: r.total, special: r.special, transport: r.transport, transportFee: r.transportFee, fresh: r.fresh, freshPrice: r.freshPrice, freshMeals: r.freshMeals })
+    : buildVisitMsg({ operator: r.operator, petName: r.petName, start: r.start, end: r.end, sAMPM: r.startAMPM, eAMPM: r.endAMPM, tpd: r.timesDay, times: r.times, price: r.price, total: r.total, special: r.special, distance: r.distance });
   navigator.clipboard.writeText(msg)
     .then(() => toast('✅ 訊息已複製！'))
     .catch(() => { const ta = document.createElement('textarea'); ta.value = msg; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); toast('✅ 訊息已複製！'); });

@@ -1,6 +1,7 @@
 // ══ Calendar ══
-let calYear = new Date().getFullYear();
-let calMonth = new Date().getMonth();
+const _tzDate = new Date().toLocaleDateString('sv', { timeZone: 'Asia/Shanghai' });
+let calYear  = parseInt(_tzDate.slice(0, 4));
+let calMonth = parseInt(_tzDate.slice(5, 7)) - 1;
 let calSelectedDate = null;
 let calSitterFilter = null;
 
@@ -297,7 +298,7 @@ function buildStayRec() {
   const pct    = pet?.pct || 0.8;
   const ciTime = document.getElementById('s-ci-time').value;
   const coTime = document.getElementById('s-co-time').value;
-  return { id: makeId(), type: 'stay', petId, petName: pet?.name || '', operator: getOp(), date: ciDate, ciDate, ciTime, coDate, coTime, days, price, pct, special, transport, transportFee, fresh, freshPrice, freshMeals, total: Math.round(total), net: Math.round(total * pct), commission: Math.round(total * (1 - pct)), note: document.getElementById('s-note').value.trim(), paid: false, createdAt: new Date().toLocaleString('zh-TW') };
+  return { id: makeId(), type: 'stay', petId, petName: pet?.name || '', operator: getOp(), date: ciDate, ciDate, ciTime, coDate, coTime, days, price, pct, special, transport, transportFee, fresh, freshPrice, freshMeals, total: Math.round(total), net: Math.round(total * pct), commission: Math.round(total * (1 - pct)), note: document.getElementById('s-note').value.trim(), paid: false, createdAt: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Shanghai' }) };
 }
 
 function resetStay() {
@@ -384,7 +385,7 @@ function buildVisitRec() {
   const sAMPM  = document.getElementById('v-start-ampm').value;
   const eAMPM  = document.getElementById('v-end-ampm').value;
   const tpd    = parseInt(document.getElementById('v-times-day').value) || 1;
-  return { id: makeId(), type: 'visit', petId, petName: pet?.name || '', operator: getOp(), date: start, start, startAMPM: sAMPM, end, endAMPM: eAMPM, timesDay: tpd, times, price, pct, special, distance, total: Math.round(total), net: Math.round(total * pct), commission: Math.round(total * (1 - pct)), note: document.getElementById('v-note').value.trim(), paid: false, createdAt: new Date().toLocaleString('zh-TW') };
+  return { id: makeId(), type: 'visit', petId, petName: pet?.name || '', operator: getOp(), date: start, start, startAMPM: sAMPM, end, endAMPM: eAMPM, timesDay: tpd, times, price, pct, special, distance, total: Math.round(total), net: Math.round(total * pct), commission: Math.round(total * (1 - pct)), note: document.getElementById('v-note').value.trim(), paid: false, createdAt: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Shanghai' }) };
 }
 
 function resetVisit() {
@@ -519,7 +520,7 @@ function saveEditRec() {
   r.net        = Math.round(r.total * r.pct);
   r.commission = Math.round(r.total * (1 - r.pct));
   r.editedBy   = getOp();
-  r.editedAt   = new Date().toLocaleString('zh-TW');
+  r.editedAt   = new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Shanghai' });
   r.editReason = reason;
   r.editHistory = [...(r.editHistory || []), { editedBy: getOp(), editedAt: r.editedAt, reason, changes }];
 

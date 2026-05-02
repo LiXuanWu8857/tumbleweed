@@ -117,7 +117,7 @@ function setupDateListeners() {
 }
 
 // ══ Helpers ══
-const todayStr = () => new Date().toISOString().slice(0, 10);
+const todayStr = () => new Date().toLocaleDateString('sv', { timeZone: 'Asia/Shanghai' });
 const makeId = () => Date.now() + '_' + Math.random().toString(36).slice(2);
 const esc = s => String(s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const fmt = n => '$' + Math.round(n).toLocaleString();

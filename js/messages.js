@@ -58,17 +58,18 @@ function buildStayMsg(r) {
 }
 
 function buildVisitMsg(r) {
-  const sLabel = fmtD(r.start) + ' ' + (r.sAMPM === 'AM' ? '早上' : '晚上');
-  const eLabel = fmtD(r.end)   + ' ' + (r.eAMPM === 'AM' ? '早上' : '晚上');
+  const sLabel    = fmtD(r.start) + ' ' + (r.sAMPM === 'AM' ? '早上' : '晚上');
+  const eLabel    = fmtD(r.end)   + ' ' + (r.eAMPM === 'AM' ? '早上' : '晚上');
+  const tpd       = r.tpd || r.timesDay || 1;
   const hasExtras = r.special || r.distance;
   const unitPrice = r.price + (r.special ? 150 : 0) + (r.distance ? 100 : 0);
   const total     = Math.round(unitPrice * r.times);
-  const bank = getSitterBank(r.operator);
+  const bank      = getSitterBank(r.operator);
 
   const lines = [
     r.petName,
     '時段 - ' + sLabel + ' ~ ' + eLabel,
-    '共' + r.times + '次',
+    '每日 ' + tpd + ' 次 · 共 ' + r.times + ' 次',
     '',
     '到府費用 ' + r.price + '$ / 次',
     r.special  ? '特殊照護加成 150$ / 次' : null,

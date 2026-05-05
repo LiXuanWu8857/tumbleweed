@@ -637,20 +637,36 @@ function renderRecords() {
   const opMap = {};
   filtered.forEach(r => {
     const op = r.operator || '未知';
-    if (!opMap[op]) opMap[op] = { total: 0, net: 0, commission: 0, count: 0 };
+    if (!opMap[op]) opMap[op] = { total: 0, net: 0, commission: 0, count: 0, owedToCompany: 0, owedToSitter: 0 };
     opMap[op].total += r.total || 0; opMap[op].net += r.net || 0; opMap[op].commission += r.commission || 0; opMap[op].count++;
+    if (r.paid && r.payee) {
+      if (r.payee === r.operator) opMap[op].owedToCompany += r.commission || 0;
+      else                        opMap[op].owedToSitter  += r.net       || 0;
+    }
   });
   const opEl = document.getElementById('opSummary');
   if (Object.keys(opMap).length) {
-    opEl.innerHTML = `<div class="op-summary"><div class="op-hdr">各保母統計</div>${Object.entries(opMap).map(([op, s]) => `
-      <div class="op-row">
-        <span class="op-name">${esc(op)} <small style="font-weight:400;color:var(--muted)">(${s.count}筆)</small></span>
-        <div class="op-nums">
-          <span>總 <span class="hi">${fmt(s.total)}</span></span>
-          <span>實拿 <span class="hi">${fmt(s.net)}</span></span>
-          <span>抽成 ${fmt(s.commission)}</span>
+    opEl.innerHTML = `<div class="op-summary"><div class="op-hdr">各保母統計</div>${Object.entries(opMap).map(([op, s]) => {
+      const netSettle   = s.owedToCompany - s.owedToSitter;
+      const hasSettle   = s.owedToCompany > 0 || s.owedToSitter > 0;
+      const settleHtml  = hasSettle
+        ? `<div class="op-settle">
+             ${s.owedToCompany ? `<span>應付公司 <b>${fmt(s.owedToCompany)}</b></span>` : ''}
+             ${s.owedToSitter  ? `<span>應收公司 <b>${fmt(s.owedToSitter)}</b></span>`  : ''}
+             <span class="${netSettle >= 0 ? 'settle-pay' : 'settle-recv'}">${netSettle >= 0 ? '需付' : '可收'} <b>${fmt(Math.abs(netSettle))}</b></span>
+           </div>` : '';
+      return `<div class="op-row">
+        <div class="op-row-main">
+          <span class="op-name">${esc(op)} <small style="font-weight:400;color:var(--muted)">(${s.count}筆)</small></span>
+          <div class="op-nums">
+            <span>總 <span class="hi">${fmt(s.total)}</span></span>
+            <span>實拿 <span class="hi">${fmt(s.net)}</span></span>
+            <span>抽成 ${fmt(s.commission)}</span>
+          </div>
         </div>
-      </div>`).join('')}</div>`;
+        ${settleHtml}
+      </div>`;
+    }).join('')}</div>`;
   } else opEl.innerHTML = '';
 
   const listEl = document.getElementById('recordsList');
@@ -662,7 +678,7 @@ function renderRecords() {
   listEl.innerHTML = Object.keys(grouped).sort().reverse().map(month => {
     const recs   = grouped[month];
     const mTotal = recs.reduce((a, r) => a + (r.total || 0), 0);
-    const mNet   = recs.reduce((a, r) => a + (r.net || 0), 0);
+    const mNet   = recs.reduce((a, r) => a + ((r.payee && r.payee === r.operator) ? (r.total || 0) : (r.net || 0)), 0);
 
     const recHtml = recs.map(r => {
       const typeLabel  = r.type === 'stay' ? '🏠 住宿' : '🚗 到府';

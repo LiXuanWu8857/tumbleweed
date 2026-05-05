@@ -647,13 +647,10 @@ function renderRecords() {
   const opEl = document.getElementById('opSummary');
   if (Object.keys(opMap).length) {
     opEl.innerHTML = `<div class="op-summary"><div class="op-hdr">各保母統計</div>${Object.entries(opMap).map(([op, s]) => {
-      const netSettle   = s.owedToCompany - s.owedToSitter;
-      const hasSettle   = s.owedToCompany > 0 || s.owedToSitter > 0;
-      const settleHtml  = hasSettle
+      const settleHtml  = s.owedToCompany > 0
         ? `<div class="op-settle">
-             ${s.owedToCompany ? `<span>應付公司 <b>${fmt(s.owedToCompany)}</b></span>` : ''}
-             ${s.owedToSitter  ? `<span>應收公司 <b>${fmt(s.owedToSitter)}</b></span>`  : ''}
-             <span class="${netSettle >= 0 ? 'settle-pay' : 'settle-recv'}">${netSettle >= 0 ? '需付' : '可收'} <b>${fmt(Math.abs(netSettle))}</b></span>
+             <span>應付公司 <b>${fmt(s.owedToCompany)}</b></span>
+             <span class="settle-pay">需付 <b>${fmt(s.owedToCompany)}</b></span>
            </div>` : '';
       return `<div class="op-row">
         <div class="op-row-main">
@@ -661,7 +658,7 @@ function renderRecords() {
           <div class="op-nums">
             <span>總 <span class="hi">${fmt(s.total)}</span></span>
             <span>實拿 <span class="hi">${fmt(s.net)}</span></span>
-            <span>抽成 ${fmt(s.commission)}</span>
+            <span>抽成 ${fmt(s.commission)}${s.owedToSitter ? ` · 非本人收款: ${fmt(s.owedToSitter)}` : ''}</span>
           </div>
         </div>
         ${settleHtml}

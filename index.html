@@ -184,9 +184,16 @@
   <div class="card">
     <div class="field-row" style="grid-template-columns:1fr auto">
       <label style="font-size:0.82rem;cursor:pointer;display:flex;align-items:center;gap:8px">
-        <input type="checkbox" id="v-special" onchange="visitCalc()" style="accent-color:var(--rose);width:16px;height:16px">
+        <input type="checkbox" id="v-special" onchange="onVSpecialChange()" style="accent-color:var(--rose);width:16px;height:16px">
         特殊照護 <span style="color:var(--muted);font-size:0.74rem">+$150 / 次</span>
       </label>
+    </div>
+    <div id="v-special-time-row" style="display:none;padding:4px 15px 8px;border-bottom:1px solid var(--border)">
+      <div style="display:flex;gap:5px">
+        <button type="button" class="spt-btn" id="spt-am"   onclick="setSpecialTime('AM')">🌅 早</button>
+        <button type="button" class="spt-btn" id="spt-pm"   onclick="setSpecialTime('PM')">🌙 晚</button>
+        <button type="button" class="spt-btn active" id="spt-both" onclick="setSpecialTime('both')">早晚</button>
+      </div>
     </div>
     <div class="field-row" style="grid-template-columns:1fr auto">
       <label style="font-size:0.82rem;cursor:pointer;display:flex;align-items:center;gap:8px">
@@ -391,6 +398,19 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- ══ Payee Modal ══ -->
+<div class="modal-bg" id="payeeModal" onclick="closeBg('payeeModal',event)">
+  <div class="modal">
+    <div class="modal-title"><span>選擇收款人</span><button class="modal-close" onclick="closeModal('payeeModal')">✕</button></div>
+    <input type="hidden" id="payee-rec-id">
+    <div id="payee-list"></div>
+    <div class="form-actions">
+      <button class="btn-cancel-form" onclick="closeModal('payeeModal')">取消</button>
+      <button class="btn-save-form" onclick="confirmPayee()">確認付款</button>
+    </div>
+  </div>
+</div>
 
 <!-- Firebase (module) -->
 <script type="module" src="js/firebase.js"></script>

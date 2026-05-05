@@ -624,7 +624,7 @@ function copyRecMsg(id) {
   const r = records.find(x => x.id === id); if (!r) return;
   const msg = r.type === 'stay'
     ? buildStayMsg({ operator: r.operator, petName: r.petName, ciDate: r.ciDate, ciTime: r.ciTime, coDate: r.coDate, coTime: r.coTime, days: r.days, price: r.price, total: r.total, special: r.special, transport: r.transport, transportFee: r.transportFee, fresh: r.fresh, freshPrice: r.freshPrice, freshMeals: r.freshMeals })
-    : buildVisitMsg({ operator: r.operator, petName: r.petName, start: r.start, end: r.end, sAMPM: r.startAMPM, eAMPM: r.endAMPM, tpd: r.timesDay, times: r.times, price: r.price, total: r.total, special: r.special, distance: r.distance });
+    : buildVisitMsg({ operator: r.operator, petName: r.petName, start: r.start, end: r.end, sAMPM: r.startAMPM, eAMPM: r.endAMPM, tpd: r.timesDay, times: r.times, price: r.price, total: r.total, special: r.special, distance: r.distance, specialTime: r.specialTime, specialTimes: r.specialTimes });
   navigator.clipboard.writeText(msg)
     .then(() => toast('✅ 訊息已複製！'))
     .catch(() => { const ta = document.createElement('textarea'); ta.value = msg; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); toast('✅ 訊息已複製！'); });

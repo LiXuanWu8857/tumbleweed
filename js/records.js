@@ -109,27 +109,23 @@ function renderCalendar() {
     weekData.push({ weekDs, weekStart, weekEnd, firstValidIdx, lastValidIdx, lanes, eLane });
   }
 
-  const globalMaxLanes = weekData.reduce((m, wd) => Math.max(m, wd.lanes.length), 0);
   let html = '';
 
   for (let w = 0; w < numWeeks; w++) {
     const { weekDs, weekStart, weekEnd, firstValidIdx, lastValidIdx, lanes } = weekData[w];
-    const rowTemplate = `30px repeat(${globalMaxLanes}, 18px)`;
-    html += `<div class="cal-week-grid" style="grid-template-rows:${rowTemplate}">`;
+    html += '<div class="cal-week">';
 
-    // Day cells — fixed to row 1
+    html += '<div class="cal-day-row">';
     weekDs.forEach((ds, col) => {
-      if (!ds) {
-        html += `<div class="cal-day-cell empty" style="grid-row:1;grid-column:${col + 1}"></div>`;
-        return;
-      }
+      if (!ds) { html += '<div class="cal-day-cell empty"></div>'; return; }
       const isToday = ds === today, isSel = ds === calSelectedDate;
       const dayNum  = parseInt(ds.slice(8));
-      html += `<div class="cal-day-cell${isToday ? ' today' : ''}${isSel ? ' selected' : ''}" style="grid-row:1;grid-column:${col + 1}" onclick="calSelectDate('${ds}')"><span class="cal-day-num">${dayNum}</span></div>`;
+      html += `<div class="cal-day-cell${isToday ? ' today' : ''}${isSel ? ' selected' : ''}" onclick="calSelectDate('${ds}')"><span class="cal-day-num">${dayNum}</span></div>`;
     });
+    html += '</div>';
 
-    // Event bars — placed in explicit lane rows (row 2+)
     for (let lane = 0; lane < lanes.length; lane++) {
+      html += '<div class="cal-event-lane">';
       (lanes[lane] || []).forEach(evt => {
         const cL = evt.start < weekStart;
         const cR = evt.end   > weekEnd;
@@ -140,11 +136,12 @@ function renderCalendar() {
         const span   = Math.max(1, safeC2 - safeC1 + 1);
         const lbl    = cL ? ('↵ ' + evt.label) : evt.label;
         const cls    = `cal-event-bar${cL ? ' no-left' : ''}${cR ? ' no-right' : ''}`;
-        html += `<div class="${cls}" style="grid-row:${lane + 2};grid-column:${safeC1 + 1}/span ${span};background:${evt.bg};color:${evt.fg}" title="${esc(evt.label)}">${esc(lbl)}</div>`;
+        html += `<div class="${cls}" style="grid-column:${safeC1 + 1}/span ${span};background:${evt.bg};color:${evt.fg}" title="${esc(evt.label)}">${esc(lbl)}</div>`;
       });
+      html += '</div>';
     }
 
-    html += '</div>'; // cal-week-grid
+    html += '</div>'; // cal-week
   }
 
   gridEl.innerHTML = html;
@@ -381,10 +378,7 @@ function visitCalc() {
 
   if (start && end) {
     const dayDiff = Math.floor((new Date(end) - new Date(start)) / 86400000) + 1;
-    let t = dayDiff * tpd;
-    if (sAMPM === 'PM') t -= tpd / 2;
-    if (eAMPM === 'AM') t -= tpd / 2;
-    times = Math.max(0, Math.ceil(t));
+    times = dayDiff * tpd;
     specialTimes = special ? calcSpecialTimes(times, tpd, _vSpecialTime) : 0;
     total = price * times + (special ? 150 * specialTimes : 0) + (distance ? 100 * times : 0);
   }
@@ -647,21 +641,17 @@ function renderRecords() {
   const opEl = document.getElementById('opSummary');
   if (Object.keys(opMap).length) {
     opEl.innerHTML = `<div class="op-summary"><div class="op-hdr">各保母統計</div>${Object.entries(opMap).map(([op, s]) => {
-      const settleHtml  = s.owedToCompany > 0
-        ? `<div class="op-settle">
-             <span>應付公司 <b>${fmt(s.owedToCompany)}</b></span>
-             <span class="settle-pay">需付 <b>${fmt(s.owedToCompany)}</b></span>
-           </div>` : '';
+      const hasSettle     = s.owedToCompany > 0 || s.owedToSitter > 0;
+      const netCommission = hasSettle ? (s.owedToCompany - s.owedToSitter) : s.commission;
       return `<div class="op-row">
         <div class="op-row-main">
           <span class="op-name">${esc(op)} <small style="font-weight:400;color:var(--muted)">(${s.count}筆)</small></span>
           <div class="op-nums">
             <span>總 <span class="hi">${fmt(s.total)}</span></span>
             <span>實拿 <span class="hi">${fmt(s.net)}</span></span>
-            <span>抽成 ${fmt(s.commission)}${s.owedToSitter ? ` · 非本人收款: ${fmt(s.owedToSitter)}` : ''}</span>
+            <span>抽成 <span class="${netCommission < 0 ? 'settle-recv' : 'settle-pay'}">${fmt(netCommission)}</span>${s.owedToSitter ? ` · 非本人收款: ${fmt(s.owedToSitter)}` : ''}</span>
           </div>
         </div>
-        ${settleHtml}
       </div>`;
     }).join('')}</div>`;
   } else opEl.innerHTML = '';
@@ -674,8 +664,10 @@ function renderRecords() {
 
   listEl.innerHTML = Object.keys(grouped).sort().reverse().map(month => {
     const recs   = grouped[month];
-    const mTotal = recs.reduce((a, r) => a + (r.total || 0), 0);
-    const mNet   = recs.reduce((a, r) => a + ((r.payee && r.payee === r.operator) ? (r.total || 0) : (r.net || 0)), 0);
+    const mTotal        = recs.reduce((a, r) => a + (r.total || 0), 0);
+    const mOwedToCompany = recs.reduce((a, r) => a + (r.paid && r.payee && r.payee === r.operator ? (r.commission || 0) : 0), 0);
+    const mOwedToSitter  = recs.reduce((a, r) => a + (r.paid && r.payee && r.payee !== r.operator ? (r.net || 0) : 0), 0);
+    const mNetCommission = (mOwedToCompany > 0 || mOwedToSitter > 0) ? mOwedToCompany - mOwedToSitter : recs.reduce((a, r) => a + (r.commission || 0), 0);
 
     const recHtml = recs.map(r => {
       const typeLabel  = r.type === 'stay' ? '🏠 住宿' : '🚗 到府';
@@ -715,6 +707,6 @@ function renderRecords() {
         <button class="rec-expand-btn" id="rb-${r.id}" onclick="toggleRecDetail('${r.id}')">▸ 展開</button>
       </div>`;
     }).join('');
-    return `<div class="month-hdr"><span class="month-label">${month.replace('-', '年')}月</span><span class="month-stats">總額 ${fmt(mTotal)} · 實拿 ${fmt(mNet)}</span></div>${recHtml}`;
+    return `<div class="month-hdr"><span class="month-label">${month.replace('-', '年')}月</span><span class="month-stats">總額 ${fmt(mTotal)} · 抽成 ${fmt(mNetCommission)}</span></div>${recHtml}`;
   }).join('');
 }

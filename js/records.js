@@ -109,23 +109,22 @@ function renderCalendar() {
     weekData.push({ weekDs, weekStart, weekEnd, firstValidIdx, lastValidIdx, lanes, eLane });
   }
 
+  const globalMaxLanes = weekData.reduce((m, wd) => Math.max(m, wd.lanes.length), 0);
+  const rowTpl = '30px' + (globalMaxLanes > 0 ? ' repeat(' + globalMaxLanes + ',18px)' : '');
   let html = '';
 
   for (let w = 0; w < numWeeks; w++) {
     const { weekDs, weekStart, weekEnd, firstValidIdx, lastValidIdx, lanes } = weekData[w];
-    html += '<div class="cal-week">';
+    html += `<div class="cal-week-grid" style="grid-template-rows:${rowTpl}">`;
 
-    html += '<div class="cal-day-row">';
     weekDs.forEach((ds, col) => {
-      if (!ds) { html += '<div class="cal-day-cell empty"></div>'; return; }
+      if (!ds) { html += `<div class="cal-day-cell empty" style="grid-row:1;grid-column:${col + 1}"></div>`; return; }
       const isToday = ds === today, isSel = ds === calSelectedDate;
       const dayNum  = parseInt(ds.slice(8));
-      html += `<div class="cal-day-cell${isToday ? ' today' : ''}${isSel ? ' selected' : ''}" onclick="calSelectDate('${ds}')"><span class="cal-day-num">${dayNum}</span></div>`;
+      html += `<div class="cal-day-cell${isToday ? ' today' : ''}${isSel ? ' selected' : ''}" style="grid-row:1;grid-column:${col + 1}" onclick="calSelectDate('${ds}')"><span class="cal-day-num">${dayNum}</span></div>`;
     });
-    html += '</div>';
 
     for (let lane = 0; lane < lanes.length; lane++) {
-      html += '<div class="cal-event-lane">';
       (lanes[lane] || []).forEach(evt => {
         const cL = evt.start < weekStart;
         const cR = evt.end   > weekEnd;
@@ -136,12 +135,11 @@ function renderCalendar() {
         const span   = Math.max(1, safeC2 - safeC1 + 1);
         const lbl    = cL ? ('↵ ' + evt.label) : evt.label;
         const cls    = `cal-event-bar${cL ? ' no-left' : ''}${cR ? ' no-right' : ''}`;
-        html += `<div class="${cls}" style="grid-column:${safeC1 + 1}/span ${span};background:${evt.bg};color:${evt.fg}" title="${esc(evt.label)}">${esc(lbl)}</div>`;
+        html += `<div class="${cls}" style="grid-row:${lane + 2};grid-column:${safeC1 + 1}/span ${span};background:${evt.bg};color:${evt.fg}" title="${esc(evt.label)}">${esc(lbl)}</div>`;
       });
-      html += '</div>';
     }
 
-    html += '</div>'; // cal-week
+    html += '</div>'; // cal-week-grid
   }
 
   gridEl.innerHTML = html;

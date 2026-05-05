@@ -232,6 +232,16 @@
   <div class="filter-bar">
     <label>月份</label>
     <select class="filter-sel" id="monthFilter" onchange="renderRecords()"><option value="">全部</option></select>
+    <button class="btn-batch" id="batchToggleBtn" onclick="toggleBatchMode()">批次</button>
+  </div>
+  <div class="batch-bar" id="batchBar" style="display:none">
+    <span id="batchCount">已選 0 筆</span>
+    <div style="display:flex;gap:5px;flex-wrap:wrap">
+      <button onclick="batchSelectAll()">全選</button>
+      <button onclick="batchMarkPaid()">✓ 標記已付</button>
+      <button onclick="batchMarkUnpaid()">✗ 標記未付</button>
+      <button onclick="toggleBatchMode()">取消</button>
+    </div>
   </div>
   <div id="opSummary"></div>
   <div id="recordsList"></div>

@@ -378,7 +378,10 @@ function visitCalc() {
 
   if (start && end) {
     const dayDiff = Math.floor((new Date(end) - new Date(start)) / 86400000) + 1;
-    times = dayDiff * tpd;
+    let t = dayDiff * tpd;
+    if (sAMPM === 'PM') t -= tpd / 2;
+    if (eAMPM === 'AM') t -= tpd / 2;
+    times = Math.max(0, Math.ceil(t));
     specialTimes = special ? calcSpecialTimes(times, tpd, _vSpecialTime) : 0;
     total = price * times + (special ? 150 * specialTimes : 0) + (distance ? 100 * times : 0);
   }
@@ -445,6 +448,69 @@ function submitVisitAndCopy() { const r = buildVisitRec(); if (!r) return; copyM
 
 // ══ Records ══
 
+let batchMode = false;
+let batchSelected = new Set();
+
+function toggleBatchMode() {
+  batchMode = !batchMode;
+  batchSelected.clear();
+  const btn = document.getElementById('batchToggleBtn');
+  if (btn) btn.classList.toggle('active', batchMode);
+  const bar = document.getElementById('batchBar');
+  if (bar) bar.style.display = batchMode ? '' : 'none';
+  updateBatchBar();
+  renderRecords();
+}
+
+function toggleBatchSelect(id) {
+  if (batchSelected.has(id)) batchSelected.delete(id);
+  else batchSelected.add(id);
+  const cb   = document.getElementById('batch-cb-' + id);
+  const card = document.getElementById('batch-card-' + id);
+  if (cb)   cb.checked = batchSelected.has(id);
+  if (card) card.classList.toggle('batch-selected', batchSelected.has(id));
+  updateBatchBar();
+}
+
+function updateBatchBar() {
+  const el = document.getElementById('batchCount');
+  if (el) el.textContent = '已選 ' + batchSelected.size + ' 筆';
+}
+
+function batchSelectAll() {
+  const fm = document.getElementById('monthFilter').value;
+  (fm ? records.filter(r => r.date && r.date.startsWith(fm)) : records).forEach(r => batchSelected.add(r.id));
+  updateBatchBar();
+  renderRecords();
+}
+
+function batchMarkPaid() {
+  if (!batchSelected.size) { toast('⚠️ 請先選擇紀錄'); return; }
+  document.getElementById('payee-rec-id').value = '__batch__';
+  const list = document.getElementById('payee-list');
+  list.innerHTML = sitters.map(s =>
+    `<label style="display:flex;align-items:center;gap:10px;padding:10px 15px;border-bottom:1px solid var(--border);cursor:pointer;font-size:0.86rem;font-weight:500">
+      <input type="radio" name="payee-radio" value="${esc(s.name)}" style="accent-color:var(--rose);width:16px;height:16px">
+      <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${s.color || 'var(--pink)'};border:1px solid rgba(0,0,0,0.1);flex-shrink:0"></span>
+      ${esc(s.name)}
+    </label>`
+  ).join('');
+  openModal('payeeModal');
+}
+
+function batchMarkUnpaid() {
+  if (!batchSelected.size) { toast('⚠️ 請先選擇紀錄'); return; }
+  const count = batchSelected.size;
+  batchSelected.forEach(id => {
+    const r = records.find(x => x.id === id);
+    if (r) { r.paid = false; delete r.payee; dbUpdate('records/' + id, { paid: false, payee: null }); }
+  });
+  batchSelected.clear();
+  updateBatchBar();
+  renderRecords();
+  toast('✅ 已標記 ' + count + ' 筆為未付款');
+}
+
 function updateMonthFilter() {
   const sel = document.getElementById('monthFilter'), cur = sel.value;
   const months = [...new Set(records.map(r => r.date ? r.date.slice(0, 7) : null).filter(Boolean))].sort().reverse();
@@ -485,12 +551,24 @@ function togglePaid(id) {
 }
 
 function confirmPayee() {
-  const id = document.getElementById('payee-rec-id').value;
-  const r  = records.find(x => x.id === id); if (!r) return;
+  const id  = document.getElementById('payee-rec-id').value;
   const sel = document.querySelector('input[name="payee-radio"]:checked');
   if (!sel) { toast('⚠️ 請選擇收款人'); return; }
-  r.paid  = true;
-  r.payee = sel.value;
+  if (id === '__batch__') {
+    const count = batchSelected.size;
+    batchSelected.forEach(bid => {
+      const r = records.find(x => x.id === bid);
+      if (r) { r.paid = true; r.payee = sel.value; dbUpdate('records/' + bid, { paid: true, payee: r.payee }); }
+    });
+    batchSelected.clear();
+    updateBatchBar();
+    closeModal('payeeModal');
+    renderRecords();
+    toast('✅ 已批次標記 ' + count + ' 筆為已付款');
+    return;
+  }
+  const r = records.find(x => x.id === id); if (!r) return;
+  r.paid = true; r.payee = sel.value;
   dbUpdate('records/' + id, { paid: true, payee: r.payee });
   closeModal('payeeModal');
   renderRecords();
@@ -679,8 +757,9 @@ function renderRecords() {
       // 實拿 display: if payee === operator → full amount; if payee !== operator → net; no payee → net
       const displayNet = (r.payee && r.payee === r.operator) ? r.total : r.net;
       const payeeMeta  = r.paid && r.payee ? ` · 收款人: ${esc(r.payee)}` : '';
-      return `<div class="rec-card" style="background:${sBg}18;border-left:3px solid ${sBg}">
+      return `<div class="rec-card${batchMode && batchSelected.has(r.id) ? ' batch-selected' : ''}" id="batch-card-${r.id}" style="background:${sBg}18;border-left:3px solid ${sBg}">
         <div class="rec-hdr">
+          ${batchMode ? `<label class="batch-cb" onclick="event.stopPropagation()"><input type="checkbox" id="batch-cb-${r.id}" ${batchSelected.has(r.id) ? 'checked' : ''} onchange="toggleBatchSelect('${r.id}')"></label>` : ''}
           <div>
             <div class="rec-title">${esc(r.petName)} · ${typeLabel} · <span style="font-size:0.75rem;font-weight:500;color:${r.paid ? 'var(--green)' : 'var(--danger)'}">${r.paid ? '✓ 已付款' : '✗ 未付款'}</span></div>
             <div class="rec-meta">${dateMeta} · ${esc(r.operator || '')}${payeeMeta}</div>

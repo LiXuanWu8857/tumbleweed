@@ -5,6 +5,9 @@ let calMonth = parseInt(_tzDate.slice(5, 7)) - 1;
 let calSelectedDate = null;
 let calSitterFilter = null;
 
+// ══ Special care timing ══
+let _vSpecialTime = 'both';
+
 function getSitterColor(opName) {
   if (!opName) return '#e8829a';
   const s = sitters.find(x => x.name === opName);
@@ -74,10 +77,10 @@ function renderCalendar() {
 
   // Build weeks
   const numWeeks = Math.ceil((firstDay + daysInMonth) / 7);
-  let html = '';
 
+  // Pre-compute all week data and find globalMaxLanes
+  const weekData = [];
   for (let w = 0; w < numWeeks; w++) {
-    // weekDs[col] = 'YYYY-MM-DD' if within month, else null
     const weekDs = [];
     for (let col = 0; col < 7; col++) {
       const d = w * 7 + col - firstDay + 1;
@@ -86,26 +89,13 @@ function renderCalendar() {
     const validDs   = weekDs.filter(Boolean);
     const weekStart = validDs[0];
     const weekEnd   = validDs[validDs.length - 1];
-    // First/last valid column indices (to clip event bars to month days only)
     const firstValidIdx = weekDs.findIndex(d => d !== null);
     let   lastValidIdx  = 6;
     for (let i = 6; i >= 0; i--) { if (weekDs[i] !== null) { lastValidIdx = i; break; } }
 
-    // Day row
-    html += '<div class="cal-week"><div class="cal-day-row">';
-    weekDs.forEach(ds => {
-      if (!ds) { html += '<div class="cal-day-cell empty"></div>'; return; }
-      const isToday = ds === today, isSel = ds === calSelectedDate;
-      const dayNum  = parseInt(ds.slice(8));
-      html += `<div class="cal-day-cell${isToday ? ' today' : ''}${isSel ? ' selected' : ''}" onclick="calSelectDate('${ds}')"><span class="cal-day-num">${dayNum}</span></div>`;
-    });
-    html += '</div>';
-
-    // Events active this week
     const wEvts = calEvts.filter(e => e.start <= weekEnd && e.end >= weekStart);
     wEvts.sort((a, b) => a.start.localeCompare(b.start) || b.end.localeCompare(a.end));
 
-    // Unlimited lane assignment (greedy)
     const lanes = [];
     const eLane = {};
     wEvts.forEach(evt => {
@@ -116,12 +106,33 @@ function renderCalendar() {
       eLane[evt.id] = lane;
     });
 
+    weekData.push({ weekDs, weekStart, weekEnd, firstValidIdx, lastValidIdx, lanes, eLane });
+  }
+
+  const globalMaxLanes = weekData.reduce((m, wd) => Math.max(m, wd.lanes.length), 0);
+  let html = '';
+
+  for (let w = 0; w < numWeeks; w++) {
+    const { weekDs, weekStart, weekEnd, firstValidIdx, lastValidIdx, lanes } = weekData[w];
+    const rowTemplate = `30px repeat(${globalMaxLanes}, 18px)`;
+    html += `<div class="cal-week-grid" style="grid-template-rows:${rowTemplate}">`;
+
+    // Day cells — fixed to row 1
+    weekDs.forEach((ds, col) => {
+      if (!ds) {
+        html += `<div class="cal-day-cell empty" style="grid-row:1;grid-column:${col + 1}"></div>`;
+        return;
+      }
+      const isToday = ds === today, isSel = ds === calSelectedDate;
+      const dayNum  = parseInt(ds.slice(8));
+      html += `<div class="cal-day-cell${isToday ? ' today' : ''}${isSel ? ' selected' : ''}" style="grid-row:1;grid-column:${col + 1}" onclick="calSelectDate('${ds}')"><span class="cal-day-num">${dayNum}</span></div>`;
+    });
+
+    // Event bars — placed in explicit lane rows (row 2+)
     for (let lane = 0; lane < lanes.length; lane++) {
-      html += '<div class="cal-event-lane">';
       (lanes[lane] || []).forEach(evt => {
         const cL = evt.start < weekStart;
         const cR = evt.end   > weekEnd;
-        // Clip to valid month cells only
         const c1 = cL ? firstValidIdx : weekDs.indexOf(evt.start);
         const c2 = cR ? lastValidIdx  : weekDs.indexOf(evt.end);
         const safeC1 = Math.max(0, c1 < 0 ? firstValidIdx : c1);
@@ -129,12 +140,11 @@ function renderCalendar() {
         const span   = Math.max(1, safeC2 - safeC1 + 1);
         const lbl    = cL ? ('↵ ' + evt.label) : evt.label;
         const cls    = `cal-event-bar${cL ? ' no-left' : ''}${cR ? ' no-right' : ''}`;
-        html += `<div class="${cls}" style="grid-column:${safeC1 + 1}/span ${span};background:${evt.bg};color:${evt.fg}" title="${esc(evt.label)}">${esc(lbl)}</div>`;
+        html += `<div class="${cls}" style="grid-row:${lane + 2};grid-column:${safeC1 + 1}/span ${span};background:${evt.bg};color:${evt.fg}" title="${esc(evt.label)}">${esc(lbl)}</div>`;
       });
-      html += '</div>';
     }
 
-    html += '</div>'; // cal-week
+    html += '</div>'; // cal-week-grid
   }
 
   gridEl.innerHTML = html;
@@ -322,6 +332,30 @@ function submitStayAndCopy() { const r = buildStayRec(); if (!r) return; copyMsg
 
 // ══ Visit ══
 
+function onVSpecialChange() {
+  const checked = document.getElementById('v-special').checked;
+  const row = document.getElementById('v-special-time-row');
+  if (row) row.style.display = checked ? '' : 'none';
+  visitCalc();
+}
+
+function setSpecialTime(t) {
+  _vSpecialTime = t;
+  ['AM', 'PM', 'both'].forEach(v => {
+    const btn = document.getElementById('spt-' + (v === 'AM' ? 'am' : v === 'PM' ? 'pm' : 'both'));
+    if (btn) btn.classList.toggle('active', v === t);
+  });
+  visitCalc();
+}
+
+function calcSpecialTimes(times, tpd, sTime) {
+  if (tpd <= 1) return times;
+  if (sTime === 'both') return times;
+  if (sTime === 'AM') return Math.round(times * Math.ceil(tpd / 2) / tpd);
+  if (sTime === 'PM') return Math.round(times * Math.floor(tpd / 2) / tpd);
+  return times;
+}
+
 function onVisitPetChange() {
   const pet = pets.find(p => p.id === document.getElementById('v-pet').value);
   if (pet && pet.visitPrice) document.getElementById('v-price').value = pet.visitPrice;
@@ -343,7 +377,7 @@ function visitCalc() {
   const price    = parseFloat(document.getElementById('v-price').value) || 0;
   const special  = document.getElementById('v-special').checked;
   const distance = document.getElementById('v-distance').checked;
-  let times = '', total = 0;
+  let times = '', total = 0, specialTimes = 0;
 
   if (start && end) {
     const dayDiff = Math.floor((new Date(end) - new Date(start)) / 86400000) + 1;
@@ -351,7 +385,8 @@ function visitCalc() {
     if (sAMPM === 'PM') t -= tpd / 2;
     if (eAMPM === 'AM') t -= tpd / 2;
     times = Math.max(0, Math.ceil(t));
-    total = price * times + (special ? 150 * times : 0) + (distance ? 100 * times : 0);
+    specialTimes = special ? calcSpecialTimes(times, tpd, _vSpecialTime) : 0;
+    total = price * times + (special ? 150 * specialTimes : 0) + (distance ? 100 * times : 0);
   }
 
   document.getElementById('v-times').textContent = times !== '' ? times + ' 次' : '—';
@@ -364,11 +399,11 @@ function visitCalc() {
     const pet   = pets.find(p => p.id === petId);
     if (pet && start && end) {
       document.getElementById('v-msg-preview').textContent =
-        buildVisitMsg({ petName: pet.name, start, end, sAMPM, eAMPM, tpd, times, price, total, special, distance });
+        buildVisitMsg({ petName: pet.name, start, end, sAMPM, eAMPM, tpd, times, price, total, special, distance, specialTime: _vSpecialTime, specialTimes });
       rc.style.display = 'block'; scb.style.display = 'block';
     }
   } else { rc.style.display = 'none'; scb.style.display = 'none'; }
-  return { times, total, special, distance };
+  return { times, total, special, distance, specialTimes };
 }
 
 function buildVisitRec() {
@@ -380,12 +415,12 @@ function buildVisitRec() {
   const price = parseFloat(document.getElementById('v-price').value) || 0;
   if (!price) { toast('⚠️ 請填寫單價'); return null; }
   const pet    = pets.find(p => p.id === petId);
-  const { times, total, special, distance } = visitCalc();
+  const { times, total, special, distance, specialTimes } = visitCalc();
   const pct    = pet?.pct || 0.8;
   const sAMPM  = document.getElementById('v-start-ampm').value;
   const eAMPM  = document.getElementById('v-end-ampm').value;
   const tpd    = parseInt(document.getElementById('v-times-day').value) || 1;
-  return { id: makeId(), type: 'visit', petId, petName: pet?.name || '', operator: getOp(), date: start, start, startAMPM: sAMPM, end, endAMPM: eAMPM, timesDay: tpd, times, price, pct, special, distance, total: Math.round(total), net: Math.round(total * pct), commission: Math.round(total * (1 - pct)), note: document.getElementById('v-note').value.trim(), paid: false, createdAt: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Shanghai' }) };
+  return { id: makeId(), type: 'visit', petId, petName: pet?.name || '', operator: getOp(), date: start, start, startAMPM: sAMPM, end, endAMPM: eAMPM, timesDay: tpd, times, price, pct, special, specialTime: _vSpecialTime, specialTimes: special ? specialTimes : 0, distance, total: Math.round(total), net: Math.round(total * pct), commission: Math.round(total * (1 - pct)), note: document.getElementById('v-note').value.trim(), paid: false, createdAt: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Shanghai' }) };
 }
 
 function resetVisit() {
@@ -401,6 +436,14 @@ function resetVisit() {
   document.getElementById('v-end-ampm').value = 'PM';
   document.getElementById('v-result-card').style.display = 'none';
   document.getElementById('v-save-copy-btn').style.display = 'none';
+  // Reset special care timing
+  _vSpecialTime = 'both';
+  const row = document.getElementById('v-special-time-row');
+  if (row) row.style.display = 'none';
+  ['spt-am', 'spt-pm', 'spt-both'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) btn.classList.toggle('active', id === 'spt-both');
+  });
 }
 
 function submitVisit()        { const r = buildVisitRec(); if (!r) return; records.unshift(r); dbSet('records/' + r.id, r); updateMonthFilter(); resetVisit(); toast('✅ 到府紀錄已儲存'); }
@@ -422,8 +465,40 @@ function toggleRecDetail(id) {
 
 function togglePaid(id) {
   const r = records.find(x => x.id === id); if (!r) return;
-  r.paid = !r.paid;
-  dbUpdate('records/' + id, { paid: r.paid });
+  if (r.paid) {
+    // Mark unpaid: clear payee
+    r.paid = false;
+    delete r.payee;
+    dbUpdate('records/' + id, { paid: false, payee: null });
+    renderRecords();
+  } else {
+    // Mark paid: show payee selection modal
+    const modal = document.getElementById('payeeModal');
+    document.getElementById('payee-rec-id').value = id;
+    const list = document.getElementById('payee-list');
+    list.innerHTML = sitters.map(s =>
+      `<label style="display:flex;align-items:center;gap:10px;padding:10px 15px;border-bottom:1px solid var(--border);cursor:pointer;font-size:0.86rem;font-weight:500">
+        <input type="radio" name="payee-radio" value="${esc(s.name)}" style="accent-color:var(--rose);width:16px;height:16px">
+        <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${s.color || 'var(--pink)'};border:1px solid rgba(0,0,0,0.1);flex-shrink:0"></span>
+        ${esc(s.name)}
+      </label>`
+    ).join('');
+    // Pre-select operator if available
+    const radioToCheck = list.querySelector(`input[value="${esc(r.operator)}"]`);
+    if (radioToCheck) radioToCheck.checked = true;
+    openModal('payeeModal');
+  }
+}
+
+function confirmPayee() {
+  const id = document.getElementById('payee-rec-id').value;
+  const r  = records.find(x => x.id === id); if (!r) return;
+  const sel = document.querySelector('input[name="payee-radio"]:checked');
+  if (!sel) { toast('⚠️ 請選擇收款人'); return; }
+  r.paid  = true;
+  r.payee = sel.value;
+  dbUpdate('records/' + id, { paid: true, payee: r.payee });
+  closeModal('payeeModal');
   renderRecords();
 }
 
@@ -596,13 +671,16 @@ function renderRecords() {
       const qty        = r.type === 'stay' ? r.days + '天' : r.times + '次';
       const pctLabel   = Math.round((r.pct || 0) * 100) + '%';
       const sBg        = getSitterColor(r.operator);
+      // 實拿 display: if payee === operator → full amount; if payee !== operator → net; no payee → net
+      const displayNet = (r.payee && r.payee === r.operator) ? r.total : r.net;
+      const payeeMeta  = r.paid && r.payee ? ` · 收款人: ${esc(r.payee)}` : '';
       return `<div class="rec-card" style="background:${sBg}18;border-left:3px solid ${sBg}">
         <div class="rec-hdr">
           <div>
             <div class="rec-title">${esc(r.petName)} · ${typeLabel} · <span style="font-size:0.75rem;font-weight:500;color:${r.paid ? 'var(--green)' : 'var(--danger)'}">${r.paid ? '✓ 已付款' : '✗ 未付款'}</span></div>
-            <div class="rec-meta">${dateMeta} · ${esc(r.operator || '')}</div>
+            <div class="rec-meta">${dateMeta} · ${esc(r.operator || '')}${payeeMeta}</div>
           </div>
-          <div class="rec-amount">${fmt(r.total)}<small>實拿 ${fmt(r.net)} · 抽成 ${pctLabel}</small></div>
+          <div class="rec-amount">${fmt(r.total)}<small>實拿 ${fmt(displayNet)} · 抽成 ${pctLabel}</small></div>
         </div>
         <div class="rec-detail" id="rd-${r.id}">
           <div class="rec-dr"><span class="rec-dl">日期</span><span class="rec-dv">${dateRange}</span></div>
@@ -611,6 +689,7 @@ function renderRecords() {
           <div class="rec-dr"><span class="rec-dl">抽成比例</span><span class="rec-dv">${pctLabel}</span></div>
           <div class="rec-dr"><span class="rec-dl">抽成金額</span><span class="rec-dv">${fmt(r.commission)}</span></div>
           <div class="rec-dr"><span class="rec-dl">付款狀態</span><span class="rec-dv ${r.paid ? 'paid' : 'unpaid'}">${r.paid ? '✓ 已付款' : '✗ 未付款'}</span></div>
+          ${r.paid && r.payee ? `<div class="rec-dr"><span class="rec-dl">收款人</span><span class="rec-dv">${esc(r.payee)}</span></div>` : ''}
           ${r.note ? `<div class="rec-dr"><span class="rec-dl">備註</span><span class="rec-dv">${esc(r.note)}</span></div>` : ''}
           ${buildEditLogHtml(r)}
           <div style="display:flex;gap:7px;padding-top:9px;flex-wrap:wrap">

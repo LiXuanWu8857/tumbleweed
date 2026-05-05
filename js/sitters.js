@@ -34,6 +34,16 @@ function onSitterSelChange() {
     </div>
   </div></div>`;
   det.style.display = '';
+
+  // Auto-fill operator selector
+  const opSel = document.getElementById('operatorSel');
+  if (opSel) opSel.value = s.name;
+
+  // Sync calendar sitter filter
+  if (typeof calSitterFilter !== 'undefined') {
+    calSitterFilter = s.name;
+    if (typeof renderCalendar === 'function') renderCalendar();
+  }
 }
 
 function populateOpSelect() {

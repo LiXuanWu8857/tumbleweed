@@ -72,7 +72,7 @@ function buildVisitMsg(r) {
     '每日 ' + tpd + ' 次 · 共 ' + r.times + ' 次',
     '',
     '到府費用 ' + r.price + '$ / 次',
-    r.special  ? '特殊照護加成 150$ / 次' : null,
+    r.special  ? '特殊照護加成 ' + (r.specialTime === 'AM' ? '(早) ' : r.specialTime === 'PM' ? '(晚) ' : '') + '150$ × ' + (r.specialTimes || r.times) + ' 次' : null,
     r.distance ? '遠距離加給 100$ / 次'   : null,
   ];
 

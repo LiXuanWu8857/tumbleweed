@@ -109,12 +109,11 @@ function renderCalendar() {
     weekData.push({ weekDs, weekStart, weekEnd, firstValidIdx, lastValidIdx, lanes, eLane });
   }
 
-  const globalMaxLanes = weekData.reduce((m, wd) => Math.max(m, wd.lanes.length), 0);
-  const rowTpl = '30px' + (globalMaxLanes > 0 ? ' repeat(' + globalMaxLanes + ',18px)' : '');
   let html = '';
 
   for (let w = 0; w < numWeeks; w++) {
     const { weekDs, weekStart, weekEnd, firstValidIdx, lastValidIdx, lanes } = weekData[w];
+    const rowTpl = '30px' + (lanes.length > 0 ? ' repeat(' + lanes.length + ',18px)' : '');
     html += `<div class="cal-week-grid" style="grid-template-rows:${rowTpl}">`;
 
     weekDs.forEach((ds, col) => {

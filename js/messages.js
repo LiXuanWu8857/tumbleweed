@@ -58,13 +58,18 @@ function buildStayMsg(r) {
 }
 
 function buildVisitMsg(r) {
-  const sLabel    = fmtD(r.start) + ' ' + (r.sAMPM === 'AM' ? '早上' : '晚上');
-  const eLabel    = fmtD(r.end)   + ' ' + (r.eAMPM === 'AM' ? '早上' : '晚上');
-  const tpd       = r.tpd || r.timesDay || 1;
-  const hasExtras = r.special || r.distance;
-  const unitPrice = r.price + (r.special ? 150 : 0) + (r.distance ? 100 : 0);
-  const total     = Math.round(unitPrice * r.times);
-  const bank      = getSitterBank(r.operator);
+  const sLabel       = fmtD(r.start) + ' ' + (r.sAMPM === 'AM' ? '早上' : '晚上');
+  const eLabel       = fmtD(r.end)   + ' ' + (r.eAMPM === 'AM' ? '早上' : '晚上');
+  const tpd          = r.tpd || r.timesDay || 1;
+  const bank         = getSitterBank(r.operator);
+  const specialTimes = r.special ? (r.specialTimes || r.times) : 0;
+  const regularTimes = r.times - specialTimes;
+  const basePrice    = r.price + (r.distance ? 100 : 0);
+  const specialPrice = basePrice + 150;
+  const total        = Math.round(r.special
+    ? basePrice * regularTimes + specialPrice * specialTimes
+    : basePrice * r.times);
+  const sTimeLabel   = r.specialTime === 'AM' ? '(早) ' : r.specialTime === 'PM' ? '(晚) ' : '';
 
   const lines = [
     r.petName,
@@ -72,21 +77,34 @@ function buildVisitMsg(r) {
     '每日 ' + tpd + ' 次 · 共 ' + r.times + ' 次',
     '',
     '到府費用 ' + r.price + '$ / 次',
-    r.special  ? '特殊照護加成 ' + (r.specialTime === 'AM' ? '(早) ' : r.specialTime === 'PM' ? '(晚) ' : '') + '150$ × ' + (r.specialTimes || r.times) + ' 次' : null,
-    r.distance ? '遠距離加給 100$ / 次'   : null,
+    r.special  ? '特殊照護加成 ' + sTimeLabel + '150$ × ' + specialTimes + ' 次' : null,
+    r.distance ? '遠距離加給 100$ / 次' : null,
   ];
 
-  if (hasExtras) {
-    let breakdown = r.price + '$';
-    if (r.special)  breakdown += ' + 150$';
-    if (r.distance) breakdown += ' + 100$';
-    breakdown += ' = ' + unitPrice + '$ / 次';
+  if (r.special) {
     lines.push('');
-    lines.push('單次到府金額 ' + breakdown);
+    if (r.distance) {
+      lines.push('單次到府金額 ' + r.price + '$ + 100$ = ' + basePrice + '$');
+      lines.push('特殊照護 ' + basePrice + '$ + 150$ = ' + specialPrice + '$ / 次');
+    } else {
+      lines.push('單次到府金額 ' + r.price + '$');
+      lines.push('特殊照護 ' + r.price + '$ + 150$ = ' + specialPrice + '$ / 次');
+    }
+    lines.push('');
+    if (regularTimes > 0) {
+      lines.push('(' + basePrice + '$ * ' + regularTimes + ') + (' + specialPrice + '$ * ' + specialTimes + ') = ' + total + '$');
+    } else {
+      lines.push(specialPrice + '$ × ' + specialTimes + ' 次 = ' + total + '$');
+    }
+  } else {
+    if (r.distance) {
+      lines.push('');
+      lines.push('單次到府金額 ' + r.price + '$ + 100$ = ' + basePrice + '$ / 次');
+    }
+    lines.push('');
+    lines.push(basePrice + '$ × ' + r.times + ' 次 = ' + total + '$');
   }
 
-  lines.push('');
-  lines.push(unitPrice + '$ × ' + r.times + ' 次 = ' + total + '$');
   lines.push('');
   lines.push('以上金額確認無誤後再付款！🙇');
   lines.push('謝謝🌸');

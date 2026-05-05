@@ -44,14 +44,34 @@
 <!-- ══ 保母 ══ -->
 <div id="page-sitters" class="page active"><div class="container">
   <p class="sec-title">保母名單</p>
-  <div class="card" id="sitterList"><div class="empty"><div class="icon">👤</div>尚未新增保母</div></div>
+  <div class="card">
+    <div class="field-row">
+      <span class="field-label">選擇保母</span>
+      <select class="f" id="sitterSel" onchange="onSitterSelChange()"><option value="">— 請選擇 —</option></select>
+    </div>
+  </div>
+  <div id="sitterDetail" style="display:none"></div>
   <button class="btn-primary" onclick="openSitterModal()">＋ 新增保母</button>
+  <p class="sec-title">預約行事曆</p>
+  <div class="cal-card">
+    <div class="cal-header">
+      <button class="cal-nav-btn" onclick="calPrev()">‹</button>
+      <span class="cal-title" id="calTitle"></span>
+      <button class="cal-nav-btn" onclick="calNext()">›</button>
+    </div>
+    <div id="calSitterFilter" class="cal-sitter-filter" style="display:none"></div>
+    <div class="cal-weekdays">
+      <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="cal-selected-hint" id="calHint" style="display:none"></div>
+  </div>
 </div></div>
 
 <!-- ══ 寵物 ══ -->
 <div id="page-pets" class="page"><div class="container">
   <p class="sec-title">寵物名單</p>
-  <div class="card" id="petList"><div class="empty"><div class="icon">🐾</div>尚未新增寵物</div></div>
+  <div id="petList"></div>
   <button class="btn-primary" onclick="openPetModal()">＋ 新增寵物資料</button>
 </div></div>
 
@@ -79,9 +99,9 @@
     <div class="field-row"><span class="field-label">離開時間</span><input type="time" class="f" id="s-co-time" oninput="stayCalc()"></div>
   </div>
   <div class="card">
-    <div class="field-row"><span class="field-label">加半天</span><div class="field-val gray" id="s-extra">—</div></div>
-    <div class="field-row"><span class="field-label">總天數</span><div class="field-val" id="s-days">—</div></div>
-    <div class="field-row"><span class="field-label">單價 / 天</span><input type="number" class="f" id="s-price" placeholder="填入後顯示預覽" oninput="stayCalc()"></div>
+    <div class="field-row"><span class="field-label" id="s-extra-label">加半天</span><div class="field-val gray" id="s-extra">—</div></div>
+    <div class="field-row"><span class="field-label" id="s-days-label">總天數</span><div class="field-val" id="s-days">—</div></div>
+    <div class="field-row"><span class="field-label" id="s-price-label">單價 / 天</span><input type="number" class="f" id="s-price" placeholder="填入後顯示預覽" oninput="stayCalc()"></div>
   </div>
   <div class="card">
     <div class="field-row" style="grid-template-columns:1fr auto">
@@ -131,6 +151,7 @@
   </div>
   <button class="btn-primary" onclick="submitStay()">✓ 儲存住宿紀錄</button>
   <button class="btn-secondary" id="s-save-copy-btn" style="display:none" onclick="submitStayAndCopy()">✓ 儲存並複製 LINE 訊息</button>
+  <button class="btn-secondary" onclick="resetStay()">↺ 重設表單</button>
 </div></div>
 
 <!-- ══ 到府 ══ -->
@@ -163,9 +184,16 @@
   <div class="card">
     <div class="field-row" style="grid-template-columns:1fr auto">
       <label style="font-size:0.82rem;cursor:pointer;display:flex;align-items:center;gap:8px">
-        <input type="checkbox" id="v-special" onchange="visitCalc()" style="accent-color:var(--rose);width:16px;height:16px">
+        <input type="checkbox" id="v-special" onchange="onVSpecialChange()" style="accent-color:var(--rose);width:16px;height:16px">
         特殊照護 <span style="color:var(--muted);font-size:0.74rem">+$150 / 次</span>
       </label>
+    </div>
+    <div id="v-special-time-row" style="display:none;padding:4px 15px 8px;border-bottom:1px solid var(--border)">
+      <div style="display:flex;gap:5px">
+        <button type="button" class="spt-btn" id="spt-am"   onclick="setSpecialTime('AM')">🌅 早</button>
+        <button type="button" class="spt-btn" id="spt-pm"   onclick="setSpecialTime('PM')">🌙 晚</button>
+        <button type="button" class="spt-btn active" id="spt-both" onclick="setSpecialTime('both')">早晚</button>
+      </div>
     </div>
     <div class="field-row" style="grid-template-columns:1fr auto">
       <label style="font-size:0.82rem;cursor:pointer;display:flex;align-items:center;gap:8px">
@@ -196,22 +224,11 @@
   </div>
   <button class="btn-primary" onclick="submitVisit()">✓ 儲存到府紀錄</button>
   <button class="btn-secondary" id="v-save-copy-btn" style="display:none" onclick="submitVisitAndCopy()">✓ 儲存並複製 LINE 訊息</button>
+  <button class="btn-secondary" onclick="resetVisit()">↺ 重設表單</button>
 </div></div>
 
 <!-- ══ 紀錄 ══ -->
 <div id="page-records" class="page"><div class="container">
-  <div class="cal-card">
-    <div class="cal-header">
-      <button class="cal-nav-btn" onclick="calPrev()">‹</button>
-      <span class="cal-title" id="calTitle"></span>
-      <button class="cal-nav-btn" onclick="calNext()">›</button>
-    </div>
-    <div class="cal-weekdays">
-      <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
-    </div>
-    <div class="cal-grid" id="calGrid"></div>
-    <div class="cal-selected-hint" id="calHint" style="display:none"></div>
-  </div>
   <div class="filter-bar">
     <label>月份</label>
     <select class="filter-sel" id="monthFilter" onchange="renderRecords()"><option value="">全部</option></select>
@@ -225,10 +242,12 @@
   <div class="modal">
     <div class="modal-title"><span id="sitterModalTitle">新增保母</span><button class="modal-close" onclick="closeModal('sitterModal')">✕</button></div>
     <div class="form-row"><label>保母名稱 *</label><input class="f" id="sm-name" placeholder="例：小花"></div>
-    <div class="form-row"><label>銀行名稱</label><input class="f" id="sm-bank-name" placeholder="例：國泰世華"></div>
-    <div class="form-row"><label>銀行代碼</label><input class="f" id="sm-bank-code" placeholder="例：013"></div>
-    <div class="form-row"><label>帳戶號碼</label><input class="f" id="sm-bank-account" placeholder="例：129506141811"></div>
-    <div class="form-row"><label>備註</label><textarea class="f" id="sm-note" placeholder="聯絡方式..."></textarea></div>
+    <div class="form-row"><label>電話 *</label><input class="f" type="tel" id="sm-phone" placeholder="例：0912-345-678"></div>
+    <div class="form-row"><label>銀行名稱 *</label><input class="f" id="sm-bank-name" placeholder="例：國泰世華"></div>
+    <div class="form-row"><label>銀行代碼 *</label><input class="f" id="sm-bank-code" placeholder="例：013"></div>
+    <div class="form-row"><label>帳戶號碼 *</label><input class="f" id="sm-bank-account" placeholder="例：129506141811"></div>
+    <div class="form-row"><label>備註</label><textarea class="f" id="sm-note" placeholder="其他說明..."></textarea></div>
+    <div class="form-row"><label>代表色</label><div style="display:flex;align-items:center;gap:10px"><input type="color" id="sm-color" value="#e8829a" style="width:40px;height:32px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;padding:2px"><span style="font-size:0.74rem;color:var(--muted)">行事曆顯示顏色</span></div></div>
     <input type="hidden" id="sm-id">
     <div class="form-actions">
       <button class="btn-cancel-form" onclick="closeModal('sitterModal')">取消</button>
@@ -244,6 +263,7 @@
     <div class="modal-title"><span id="petModalTitle">新增寵物</span><button class="modal-close" onclick="closeModal('petModal')">✕</button></div>
     <div class="form-row"><label>寵物名稱 *</label><input class="f" id="pm-name" placeholder="例：乖乖"></div>
     <div class="form-row"><label>住宿單價 / 天</label><input type="number" class="f" id="pm-stay-price" placeholder="0"></div>
+    <div class="form-row"><label>安親單價 / 8hr</label><input type="number" class="f" id="pm-daycare-price" placeholder="0"></div>
     <div class="form-row"><label>到府單價 / 次</label><input type="number" class="f" id="pm-visit-price" placeholder="0"></div>
     <div class="form-row"><label>預設抽成比例（例 0.8 = 80%）</label><input type="number" class="f" id="pm-pct" placeholder="0.8" step="0.05"></div>
     <div class="form-row"><label>服務類型</label>
@@ -266,7 +286,7 @@
 </div>
 
 <!-- ══ Edit Pet Modal ══ -->
-<div class="modal-bg" id="editPetModal" onclick="closeBg('editPetModal',event)">
+<div class="modal-bg" id="editPetModal">
   <div class="modal">
     <div class="modal-title">
       <span>✏️ 編輯寵物資料</span>
@@ -288,8 +308,8 @@
     </div>
     <div class="form-row"><label>備註</label><textarea class="f" id="ep-note" placeholder="品種、特殊需求..."></textarea></div>
     <div class="form-row er-reason-row">
-      <label>編輯原因 <span class="required-hint">（必填，不填無法儲存）</span></label>
-      <textarea class="f" id="ep-reason" placeholder="請說明更改原因，例：費用調整、資料更正…"></textarea>
+      <label>編輯原因（選填）</label>
+      <textarea class="f" id="ep-reason" placeholder="例：費用調整、資料更正…"></textarea>
     </div>
     <input type="hidden" id="ep-id">
     <div class="form-actions">
@@ -378,6 +398,19 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- ══ Payee Modal ══ -->
+<div class="modal-bg" id="payeeModal" onclick="closeBg('payeeModal',event)">
+  <div class="modal">
+    <div class="modal-title"><span>選擇收款人</span><button class="modal-close" onclick="closeModal('payeeModal')">✕</button></div>
+    <input type="hidden" id="payee-rec-id">
+    <div id="payee-list"></div>
+    <div class="form-actions">
+      <button class="btn-cancel-form" onclick="closeModal('payeeModal')">取消</button>
+      <button class="btn-save-form" onclick="confirmPayee()">確認付款</button>
+    </div>
+  </div>
+</div>
 
 <!-- Firebase (module) -->
 <script type="module" src="js/firebase.js"></script>

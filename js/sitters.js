@@ -5,7 +5,10 @@ function renderSitterList() {
   if (!sel) return;
   const cur = sel.value;
   sel.innerHTML = '<option value="">— 請選擇 —</option>' +
-    sitters.map(s => `<option value="${s.id}" ${s.id === cur ? 'selected' : ''}>${esc(s.name)}</option>`).join('');
+    sitters.map(s => {
+      const dot = s.color ? `●` : '';
+      return `<option value="${s.id}" ${s.id === cur ? 'selected' : ''}>${esc(s.name)}</option>`;
+    }).join('');
   onSitterSelChange();
 }
 
@@ -15,8 +18,6 @@ function onSitterSelChange() {
   if (!id) { det.style.display = 'none'; det.innerHTML = ''; return; }
   const s = sitters.find(x => x.id === id);
   if (!s) { det.style.display = 'none'; return; }
-  const opSel = document.getElementById('operatorSel');
-  if (opSel) opSel.value = s.name;
   const dot = s.color
     ? `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${s.color};border:1px solid rgba(0,0,0,0.1);margin-right:5px;vertical-align:middle"></span>`
     : '';
@@ -33,6 +34,16 @@ function onSitterSelChange() {
     </div>
   </div></div>`;
   det.style.display = '';
+
+  // Auto-fill operator selector
+  const opSel = document.getElementById('operatorSel');
+  if (opSel) opSel.value = s.name;
+
+  // Sync calendar sitter filter
+  if (typeof calSitterFilter !== 'undefined') {
+    calSitterFilter = s.name;
+    if (typeof renderCalendar === 'function') renderCalendar();
+  }
 }
 
 function populateOpSelect() {
@@ -46,31 +57,36 @@ function openSitterModal(editId) {
   if (editId) {
     const s = sitters.find(x => x.id === editId); if (!s) return;
     document.getElementById('sitterModalTitle').textContent = '編輯保母';
-    document.getElementById('sm-name').value = s.name || '';
-    document.getElementById('sm-bank-name').value = s.bankName || '';
-    document.getElementById('sm-bank-code').value = s.bankCode || '';
-    document.getElementById('sm-bank-account').value = s.bankAccount || '';
-    document.getElementById('sm-note').value = s.note || '';
+    document.getElementById('sm-name').value        = s.name        || '';
+    document.getElementById('sm-bank-name').value   = s.bankName    || '';
+    document.getElementById('sm-bank-code').value   = s.bankCode    || '';
+    document.getElementById('sm-bank-account').value= s.bankAccount || '';
+    document.getElementById('sm-phone').value       = s.phone       || '';
+    document.getElementById('sm-note').value        = s.note        || '';
+    document.getElementById('sm-color').value       = s.color       || '#e8829a';
     document.getElementById('sm-del').innerHTML = `<button class="btn-danger" onclick="deleteSitter('${editId}');closeModal('sitterModal')">🗑 刪除保母</button>`;
   } else {
     document.getElementById('sitterModalTitle').textContent = '新增保母';
-    ['sm-name', 'sm-bank-name', 'sm-bank-code', 'sm-bank-account', 'sm-note'].forEach(id => document.getElementById(id).value = '');
+    ['sm-name', 'sm-bank-name', 'sm-bank-code', 'sm-bank-account', 'sm-phone', 'sm-note'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('sm-color').value = '#e8829a';
     document.getElementById('sm-del').innerHTML = '';
   }
   openModal('sitterModal');
 }
 
 function saveSitter() {
-  const name = document.getElementById('sm-name').value.trim();
-  if (!name) { toast('⚠️ 請輸入保母名稱'); return; }
+  const name        = document.getElementById('sm-name').value.trim();
+  const bankName    = document.getElementById('sm-bank-name').value.trim();
+  const bankCode    = document.getElementById('sm-bank-code').value.trim();
+  const bankAccount = document.getElementById('sm-bank-account').value.trim();
+  const phone       = document.getElementById('sm-phone').value.trim();
+  if (!name)        { toast('⚠️ 請輸入保母名稱'); return; }
+  if (!bankName)    { toast('⚠️ 請輸入銀行名稱'); return; }
+  if (!bankCode)    { toast('⚠️ 請輸入銀行代碼'); return; }
+  if (!bankAccount) { toast('⚠️ 請輸入帳戶號碼'); return; }
+  if (!phone)       { toast('⚠️ 請輸入電話'); return; }
   const editId = document.getElementById('sm-id').value;
-  const data = {
-    name,
-    bankName:    document.getElementById('sm-bank-name').value.trim(),
-    bankCode:    document.getElementById('sm-bank-code').value.trim(),
-    bankAccount: document.getElementById('sm-bank-account').value.trim(),
-    note:        document.getElementById('sm-note').value.trim()
-  };
+  const data   = { name, bankName, bankCode, bankAccount, phone, note: document.getElementById('sm-note').value.trim(), color: document.getElementById('sm-color').value };
   let sitter;
   if (editId) {
     const i = sitters.findIndex(x => x.id === editId);
@@ -87,5 +103,7 @@ function deleteSitter(id) {
   if (!confirm('確定刪除？')) return;
   sitters = sitters.filter(s => s.id !== id);
   dbRemove('sitters/' + id);
+  const sel = document.getElementById('sitterSel');
+  if (sel && sel.value === id) sel.value = '';
   renderSitterList(); populateOpSelect();
 }

@@ -131,7 +131,6 @@ function openEditPetModal(id) {
 function saveEditPet() {
   const id = document.getElementById('ep-id').value;
   const reason = document.getElementById('ep-reason').value.trim();
-  if (!reason) { toast('⚠️ 請填寫編輯原因才能儲存'); return; }
   const p = pets.find(x => x.id === id); if (!p) return;
 
   const newName        = document.getElementById('ep-name').value.trim();
@@ -183,4 +182,41 @@ function buildPetEditLogHtml(p) {
     return `<div class="rec-edit-entry"><div class="rec-edit-info">${esc(h.editedBy)} · ${esc(h.editedAt)}</div>${changesHtml}<div class="rec-edit-reason">${esc(h.reason)}</div></div>`;
   }).join('');
   return `<div class="rec-edit-log"><div class="rec-edit-label">編輯歷史</div>${entries}</div>`;
+}
+
+function deduplicatePets() {
+  const byName = {};
+  pets.forEach(p => {
+    if (!byName[p.name]) byName[p.name] = [];
+    byName[p.name].push(p);
+  });
+  let merged = 0;
+  Object.values(byName).forEach(group => {
+    if (group.length < 2) return;
+    group.sort((a, b) => {
+      if (a.serviceType && !b.serviceType) return -1;
+      if (!a.serviceType && b.serviceType) return 1;
+      return (b.careSteps?.length || 0) - (a.careSteps?.length || 0);
+    });
+    const keeper = group[0];
+    const stepIds = new Set((keeper.careSteps || []).map(s => s.id));
+    const mergedSteps = [...(keeper.careSteps || [])];
+    for (let i = 1; i < group.length; i++) {
+      const dup = group[i];
+      if (!keeper.note        && dup.note)        keeper.note        = dup.note;
+      if (!keeper.stayPrice   && dup.stayPrice)   keeper.stayPrice   = dup.stayPrice;
+      if (!keeper.daycarePrice && dup.daycarePrice) keeper.daycarePrice = dup.daycarePrice;
+      if (!keeper.visitPrice  && dup.visitPrice)  keeper.visitPrice  = dup.visitPrice;
+      if (!keeper.pct         && dup.pct)         keeper.pct         = dup.pct;
+      (dup.careSteps || []).forEach(s => {
+        if (!stepIds.has(s.id)) { mergedSteps.push(s); stepIds.add(s.id); }
+      });
+      dbRemove('pets/' + dup.id);
+      pets = pets.filter(p => p.id !== dup.id);
+    }
+    keeper.careSteps = mergedSteps;
+    dbSet('pets/' + keeper.id, keeper);
+    merged++;
+  });
+  if (merged > 0) { renderPetList(); populatePetSelects(); renderCarePetGrid(); toast(`✅ 已合併 ${merged} 組重複寵物`); }
 }

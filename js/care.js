@@ -27,15 +27,42 @@ function renderStepEditor() {
             style="${!s.time || s.time === 'NONE' ? 'border-color:var(--muted);background:#f5f5f5;color:var(--muted)' : ''}"
             onclick="setStepTime(${i},'NONE')">不指定</button>
         </div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:6px">
+          <input type="file" id="sp-${i}" accept="image/*" style="display:none" onchange="uploadStepPhoto(${i},this)">
+          <button class="step-photo-btn" type="button" onclick="document.getElementById('sp-${i}').click()">📷 ${s.photoData ? '更換照片' : '上傳照片'}</button>
+          ${s.photoData ? `<button class="step-photo-del" type="button" onclick="careSteps[${i}].photoData='';renderStepEditor()">✕ 刪除</button>` : ''}
+        </div>
+        ${s.photoData ? `<img src="${s.photoData}" class="step-photo-preview">` : ''}
       </div>
       <button class="step-del" onclick="removeStep(${i})">✕</button>
     </div>`).join('');
 }
 
-function addStep()               { careSteps.push({ id: makeId(), text: '', desc: '', time: 'NONE' }); renderStepEditor(); }
-function addTplStep(title, desc) { careSteps.push({ id: makeId(), text: title, desc: desc, time: 'NONE' }); renderStepEditor(); }
+function addStep()               { careSteps.push({ id: makeId(), text: '', desc: '', time: 'NONE', photoData: '' }); renderStepEditor(); }
+function addTplStep(title, desc) { careSteps.push({ id: makeId(), text: title, desc: desc, time: 'NONE', photoData: '' }); renderStepEditor(); }
 function removeStep(i)           { careSteps.splice(i, 1); renderStepEditor(); }
 function setStepTime(i, t)       { careSteps[i].time = t; renderStepEditor(); }
+
+function uploadStepPhoto(i, input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const MAX = 700;
+      let w = img.width, h = img.height;
+      if (w > h) { if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; } }
+      else        { if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; } }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      careSteps[i].photoData = canvas.toDataURL('image/jpeg', 0.65);
+      renderStepEditor();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
 
 function saveCareManual() {
   const petId = document.getElementById('care-pet-id').value;
@@ -59,7 +86,7 @@ function dEnd() { dragSrcEl = null; }
 // ══ 備忘 Checklist ══
 let checkState = {};
 let activeCareId = null;
-let editCheckStepId = null;  // Feature 3: 目前在備忘中編輯的步驟 id
+let editCheckStepId = null;
 
 function renderCarePetGrid() {
   const grid = document.getElementById('care-pet-grid');
@@ -70,33 +97,46 @@ function renderCarePetGrid() {
     document.getElementById('care-checklist-wrap').innerHTML = '';
     return;
   }
+  if (activeCareId) {
+    const pet = pets.find(p => p.id === activeCareId);
+    grid.innerHTML = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+      <button class="care-back-btn" onclick="backToPetGrid()">← 返回</button>
+      <div class="pet-grid-card active" style="flex:1;pointer-events:none">
+        <div class="pet-grid-main" style="text-align:center">
+          <div class="pet-grid-name">🐾 ${pet ? esc(pet.name) : ''}</div>
+        </div>
+        ${pet ? `<button class="pet-grid-edit-btn" style="pointer-events:all" onclick="openEditPetModal('${pet.id}')" title="編輯">✏️</button>` : ''}
+      </div>
+    </div>`;
+    return;
+  }
   grid.innerHTML = `<div class="pet-grid">${hasCare.map(p => `
-    <div class="pet-grid-card ${activeCareId === p.id ? 'active' : ''}">
+    <div class="pet-grid-card">
       <div class="pet-grid-main" onclick="toggleCareAccordion('${p.id}')">
         <div class="pet-grid-name">🐾 ${esc(p.name)}</div>
         <div class="pet-grid-steps">${p.careSteps.length} 個步驟</div>
       </div>
-      <button class="pet-grid-edit-btn" onclick="openPetModal('${p.id}')" title="編輯寵物資料">✏️</button>
+      <button class="pet-grid-edit-btn" onclick="openEditPetModal('${p.id}')" title="編輯寵物資料">✏️</button>
     </div>`).join('')}</div>`;
 }
 
-function toggleCareAccordion(petId) {
-  if (activeCareId === petId) {
-    activeCareId = null;
-    editCheckStepId = null;
-    document.getElementById('care-checklist-wrap').innerHTML = '';
-  } else {
-    activeCareId = petId;
-    editCheckStepId = null;  // 切換寵物時重置編輯狀態
-    const pet = pets.find(p => p.id === petId); if (!pet) return;
-    checkState = {};
-    pet.careSteps.forEach(s => checkState[s.id] = false);
-    renderChecklistNew(pet);
-  }
+function backToPetGrid() {
+  activeCareId = null;
+  editCheckStepId = null;
+  document.getElementById('care-checklist-wrap').innerHTML = '';
   renderCarePetGrid();
 }
 
-// Feature 3: 備忘內聯編輯函式
+function toggleCareAccordion(petId) {
+  activeCareId = petId;
+  editCheckStepId = null;
+  const pet = pets.find(p => p.id === petId); if (!pet) return;
+  checkState = {};
+  pet.careSteps.forEach(s => checkState[s.id] = false);
+  renderCarePetGrid();
+  renderChecklistNew(pet);
+}
+
 function editCheckStep(stepId) {
   editCheckStepId = stepId;
   const pet = pets.find(p => p.id === activeCareId);
@@ -142,7 +182,6 @@ function renderChecklistNew(pet) {
     </div>`;
   };
 
-  // Feature 3: 每個步驟的渲染（支援內聯編輯）
   const renderStep = (s) => {
     if (editCheckStepId === s.id) {
       return `<div class="check-item editing">
@@ -167,6 +206,7 @@ function renderChecklistNew(pet) {
           ${s.desc ? `<div style="font-size:0.76rem;color:var(--muted);margin-top:3px;white-space:pre-wrap">${esc(s.desc)}</div>` : ''}
           ${isAddr && s.desc ? mapLinks(s.desc) : ''}
           ${chipMap[s.time || ''] || ''}
+          ${s.photoData ? `<img src="${s.photoData}" class="check-step-photo" onclick="window.open(this.src)">` : ''}
         </div>
         <button class="check-edit-btn" onclick="editCheckStep('${s.id}')" title="編輯此步驟">✏️</button>
       </div>`;

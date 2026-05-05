@@ -1,8 +1,12 @@
 // ══ Calendar ══
-let calYear = new Date().getFullYear();
-let calMonth = new Date().getMonth();
+const _tzDate = new Date().toLocaleDateString('sv', { timeZone: 'Asia/Shanghai' });
+let calYear  = parseInt(_tzDate.slice(0, 4));
+let calMonth = parseInt(_tzDate.slice(5, 7)) - 1;
 let calSelectedDate = null;
 let calSitterFilter = null;
+
+// ══ Special care timing ══
+let _vSpecialTime = 'both';
 
 function getSitterColor(opName) {
   if (!opName) return '#e8829a';
@@ -34,6 +38,7 @@ function renderCalendar() {
 
   titleEl.textContent = calYear + '年' + (calMonth + 1) + '月';
 
+  // Sitter filter pills — show when any operators have records
   if (filterEl) {
     const opNames = [...new Set(records.map(r => r.operator).filter(Boolean))];
     if (opNames.length >= 1) {
@@ -50,6 +55,7 @@ function renderCalendar() {
     }
   }
 
+  // Build event list for this month
   const calEvts = records
     .filter(r => {
       if (calSitterFilter && r.operator !== calSitterFilter) return false;
@@ -69,37 +75,49 @@ function renderCalendar() {
       };
     });
 
+  // Build weeks
   const numWeeks = Math.ceil((firstDay + daysInMonth) / 7);
-  const allWeekData = [];
+
+  // Pre-compute all week data and find globalMaxLanes
+  const weekData = [];
   for (let w = 0; w < numWeeks; w++) {
     const weekDs = [];
     for (let col = 0; col < 7; col++) {
       const d = w * 7 + col - firstDay + 1;
       weekDs.push((d >= 1 && d <= daysInMonth) ? monthStr + '-' + String(d).padStart(2, '0') : null);
     }
-    const validDs       = weekDs.filter(Boolean);
-    const weekStart     = validDs[0];
-    const weekEnd       = validDs[validDs.length - 1];
+    const validDs   = weekDs.filter(Boolean);
+    const weekStart = validDs[0];
+    const weekEnd   = validDs[validDs.length - 1];
     const firstValidIdx = weekDs.findIndex(d => d !== null);
     let   lastValidIdx  = 6;
     for (let i = 6; i >= 0; i--) { if (weekDs[i] !== null) { lastValidIdx = i; break; } }
+
     const wEvts = calEvts.filter(e => e.start <= weekEnd && e.end >= weekStart);
     wEvts.sort((a, b) => a.start.localeCompare(b.start) || b.end.localeCompare(a.end));
+
     const lanes = [];
+    const eLane = {};
     wEvts.forEach(evt => {
       let lane = 0;
       while ((lanes[lane] || []).some(e => e.start <= evt.end && e.end >= evt.start)) lane++;
       if (!lanes[lane]) lanes[lane] = [];
       lanes[lane].push(evt);
+      eLane[evt.id] = lane;
     });
-    allWeekData.push({ weekDs, weekStart, weekEnd, firstValidIdx, lastValidIdx, lanes });
-  }
-  const globalMaxLanes = Math.max(0, ...allWeekData.map(wd => wd.lanes.length));
-  const rowTpl = '30px' + (globalMaxLanes > 0 ? ' repeat(' + globalMaxLanes + ',18px)' : '');
 
+    weekData.push({ weekDs, weekStart, weekEnd, firstValidIdx, lastValidIdx, lanes, eLane });
+  }
+
+  const globalMaxLanes = weekData.reduce((m, wd) => Math.max(m, wd.lanes.length), 0);
   let html = '';
-  for (const { weekDs, weekStart, weekEnd, firstValidIdx, lastValidIdx, lanes } of allWeekData) {
-    html += `<div class="cal-week-grid" style="grid-template-rows:${rowTpl}">`;
+
+  for (let w = 0; w < numWeeks; w++) {
+    const { weekDs, weekStart, weekEnd, firstValidIdx, lastValidIdx, lanes } = weekData[w];
+    const rowTemplate = `30px repeat(${globalMaxLanes}, 18px)`;
+    html += `<div class="cal-week-grid" style="grid-template-rows:${rowTemplate}">`;
+
+    // Day cells — fixed to row 1
     weekDs.forEach((ds, col) => {
       if (!ds) {
         html += `<div class="cal-day-cell empty" style="grid-row:1;grid-column:${col + 1}"></div>`;
@@ -109,12 +127,14 @@ function renderCalendar() {
       const dayNum  = parseInt(ds.slice(8));
       html += `<div class="cal-day-cell${isToday ? ' today' : ''}${isSel ? ' selected' : ''}" style="grid-row:1;grid-column:${col + 1}" onclick="calSelectDate('${ds}')"><span class="cal-day-num">${dayNum}</span></div>`;
     });
+
+    // Event bars — placed in explicit lane rows (row 2+)
     for (let lane = 0; lane < lanes.length; lane++) {
       (lanes[lane] || []).forEach(evt => {
-        const cL     = evt.start < weekStart;
-        const cR     = evt.end   > weekEnd;
-        const c1     = cL ? firstValidIdx : weekDs.indexOf(evt.start);
-        const c2     = cR ? lastValidIdx  : weekDs.indexOf(evt.end);
+        const cL = evt.start < weekStart;
+        const cR = evt.end   > weekEnd;
+        const c1 = cL ? firstValidIdx : weekDs.indexOf(evt.start);
+        const c2 = cR ? lastValidIdx  : weekDs.indexOf(evt.end);
         const safeC1 = Math.max(0, c1 < 0 ? firstValidIdx : c1);
         const safeC2 = Math.min(6, c2 < 0 ? lastValidIdx  : c2);
         const span   = Math.max(1, safeC2 - safeC1 + 1);
@@ -123,7 +143,8 @@ function renderCalendar() {
         html += `<div class="${cls}" style="grid-row:${lane + 2};grid-column:${safeC1 + 1}/span ${span};background:${evt.bg};color:${evt.fg}" title="${esc(evt.label)}">${esc(lbl)}</div>`;
       });
     }
-    html += '</div>';
+
+    html += '</div>'; // cal-week-grid
   }
 
   gridEl.innerHTML = html;
@@ -140,25 +161,27 @@ function renderCalendar() {
   }
 }
 
-function calPrev() {
-  calMonth--;
-  if (calMonth < 0) { calMonth = 11; calYear--; }
-  renderCalendar();
-}
-
-function calNext() {
-  calMonth++;
-  if (calMonth > 11) { calMonth = 0; calYear++; }
-  renderCalendar();
-}
+function calPrev() { calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; } renderCalendar(); }
+function calNext() { calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; } renderCalendar(); }
 
 function calSelectDate(dateStr) {
   calSelectedDate = calSelectedDate === dateStr ? null : dateStr;
   renderCalendar();
-  renderRecords();
+}
+
+function calSetSitterFilter(name) {
+  calSitterFilter = name;
+  renderCalendar();
+}
+
+function calSetSitterFilterFromBtn(btn) {
+  const name = btn.dataset.name;
+  calSitterFilter = calSitterFilter === name ? null : name;
+  renderCalendar();
 }
 
 // ══ Helpers ══
+let _lastIsDaycare = null;
 
 function timeToMins(t) {
   if (!t) return 0;
@@ -179,8 +202,7 @@ function calcFreshMeals(ciDate, ciTime, coDate, coTime) {
 // ══ Stay ══
 
 function onStayPetChange() {
-  const pet = pets.find(p => p.id === document.getElementById('s-pet').value);
-  if (pet && pet.stayPrice) document.getElementById('s-price').value = pet.stayPrice;
+  _lastIsDaycare = null;
   stayCalc();
 }
 
@@ -189,7 +211,6 @@ function stayCalc() {
   const ciTime       = document.getElementById('s-ci-time').value;
   const coDate       = document.getElementById('s-co-date').value;
   const coTime       = document.getElementById('s-co-time').value;
-  const price        = parseFloat(document.getElementById('s-price').value) || 0;
   const special      = document.getElementById('s-special').checked;
   const transport    = document.getElementById('s-transport').checked;
   const transportFee = parseFloat(document.getElementById('s-transport-fee').value) || 0;
@@ -197,28 +218,63 @@ function stayCalc() {
   const freshPrice   = parseFloat(document.getElementById('s-fresh-price').value) || 0;
   let days = '', extraLabel = '', total = 0, freshMeals = 0;
 
+  // 判斷是否為安親（≤ 8 小時）
+  let totalHours = null;
+  if (ciDate && coDate && ciTime && coTime) {
+    totalHours = (new Date(coDate + 'T' + coTime) - new Date(ciDate + 'T' + ciTime)) / 3600000;
+  }
+  const isDaycare = totalHours !== null && totalHours > 0 && totalHours <= 8;
+
+  // 當模式切換時自動帶入對應單價
+  const petId = document.getElementById('s-pet').value;
+  const pet   = pets.find(p => p.id === petId);
+  if (isDaycare !== _lastIsDaycare) {
+    _lastIsDaycare = isDaycare;
+    if (isDaycare && pet && pet.daycarePrice) {
+      document.getElementById('s-price').value = pet.daycarePrice;
+    } else if (!isDaycare && pet && pet.stayPrice) {
+      document.getElementById('s-price').value = pet.stayPrice;
+    }
+  }
+
+  const price = parseFloat(document.getElementById('s-price').value) || 0;
+
   if (ciDate && coDate) {
     let diff = (new Date(coDate) - new Date(ciDate)) / 86400000;
     if (diff < 0) diff = 0;
     let extra = 0;
-    if (ciTime && coTime) {
+    if (!isDaycare && ciTime && coTime) {
       const ciH = parseInt(ciTime), coH = parseInt(coTime);
-      extra = Math.abs(coH - ciH) < 12 ? 0.5 : 1;
-      extraLabel = extra === 0.5 ? '是 (+½ 天)' : '加整天';
+      const timeDiff = coH - ciH;
+      if (timeDiff > 0) {
+        extra = timeDiff < 12 ? 0.5 : 1;
+        extraLabel = extra === 0.5 ? '是 (+½ 天)' : '加整天';
+      }
     }
-    days = diff === 0 ? 1 : (extra > 0 ? diff + extra : diff);
+    days = isDaycare ? 1 : (diff === 0 ? 1 : (extra > 0 ? diff + extra : diff));
     days = days % 1 === 0 ? days : parseFloat(days.toFixed(1));
     const daysRounded = Math.round(days * 2) / 2;
-    if (fresh && ciDate && coDate) {
-      freshMeals = calcFreshMeals(ciDate, ciTime, coDate, coTime);
-    }
-    const freshTotal    = fresh ? freshPrice * freshMeals : 0;
+    if (fresh && ciDate && coDate) freshMeals = calcFreshMeals(ciDate, ciTime, coDate, coTime);
+    const freshTotal     = fresh ? freshPrice * freshMeals : 0;
     const transportTotal = transport ? transportFee : 0;
     total = price * daysRounded + (special ? 150 * daysRounded : 0) + transportTotal + freshTotal;
   }
 
-  document.getElementById('s-extra').textContent = extraLabel || '—';
-  document.getElementById('s-days').textContent  = days !== '' ? days + ' 天' : '—';
+  // 更新標籤
+  if (isDaycare) {
+    document.getElementById('s-extra-label').textContent = '類型';
+    document.getElementById('s-extra').textContent = '安親';
+    document.getElementById('s-days-label').textContent = '時數';
+    document.getElementById('s-days').textContent = totalHours !== null ? totalHours.toFixed(1) + ' 小時' : '—';
+    document.getElementById('s-price-label').textContent = '安親單價 / 8hr';
+  } else {
+    document.getElementById('s-extra-label').textContent = '加半天';
+    document.getElementById('s-extra').textContent = extraLabel || '—';
+    document.getElementById('s-days-label').textContent = '總天數';
+    document.getElementById('s-days').textContent = days !== '' ? days + ' 天' : '—';
+    document.getElementById('s-price-label').textContent = '單價 / 天';
+  }
+
   const freshRow = document.getElementById('s-fresh-meals-row');
   if (fresh && freshMeals > 0) {
     freshRow.style.display = '';
@@ -229,15 +285,13 @@ function stayCalc() {
   const scb = document.getElementById('s-save-copy-btn');
   if (price > 0 && days !== '') {
     document.getElementById('s-total').textContent = fmt(total);
-    const petId = document.getElementById('s-pet').value;
-    const pet   = pets.find(p => p.id === petId);
     if (pet && ciDate && coDate) {
       document.getElementById('s-msg-preview').textContent =
-        buildStayMsg({ petName: pet.name, ciDate, ciTime, coDate, coTime, days, price, total, special, transport, transportFee, fresh, freshPrice, freshMeals });
+        buildStayMsg({ petName: pet.name, ciDate, ciTime, coDate, coTime, days, price, total, special, transport, transportFee, fresh, freshPrice, freshMeals, isDaycare });
       rc.style.display = 'block'; scb.style.display = 'block';
     }
   } else { rc.style.display = 'none'; scb.style.display = 'none'; }
-  return { days, total, special, transport, transportFee, fresh, freshPrice, freshMeals };
+  return { days, total, special, transport, transportFee, fresh, freshPrice, freshMeals, isDaycare };
 }
 
 function buildStayRec() {
@@ -254,7 +308,7 @@ function buildStayRec() {
   const pct    = pet?.pct || 0.8;
   const ciTime = document.getElementById('s-ci-time').value;
   const coTime = document.getElementById('s-co-time').value;
-  return { id: makeId(), type: 'stay', petId, petName: pet?.name || '', operator: getOp(), date: ciDate, ciDate, ciTime, coDate, coTime, days, price, pct, special, transport, transportFee, fresh, freshPrice, freshMeals, total: Math.round(total), net: Math.round(total * pct), commission: Math.round(total * (1 - pct)), note: document.getElementById('s-note').value.trim(), paid: false, createdAt: new Date().toLocaleString('zh-TW') };
+  return { id: makeId(), type: 'stay', petId, petName: pet?.name || '', operator: getOp(), date: ciDate, ciDate, ciTime, coDate, coTime, days, price, pct, special, transport, transportFee, fresh, freshPrice, freshMeals, total: Math.round(total), net: Math.round(total * pct), commission: Math.round(total * (1 - pct)), note: document.getElementById('s-note').value.trim(), paid: false, createdAt: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Shanghai' }) };
 }
 
 function resetStay() {
@@ -262,8 +316,8 @@ function resetStay() {
   const t = todayStr();
   const ci = document.getElementById('s-ci-date'), co = document.getElementById('s-co-date');
   ci.value = t; co.value = t; delete co.dataset.manual;
-  document.getElementById('s-ci-time').value = '07:00';
-  document.getElementById('s-co-time').value = '07:00';
+  document.getElementById('s-ci-time').value = '';
+  document.getElementById('s-co-time').value = '';
   ['s-price', 's-note', 's-transport-fee', 's-fresh-price'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('s-special').checked = false;
   document.getElementById('s-transport').checked = false;
@@ -277,6 +331,30 @@ function submitStay()        { const r = buildStayRec(); if (!r) return; records
 function submitStayAndCopy() { const r = buildStayRec(); if (!r) return; copyMsg('stay'); records.unshift(r); dbSet('records/' + r.id, r); updateMonthFilter(); resetStay(); toast('✅ 已儲存並複製訊息！'); }
 
 // ══ Visit ══
+
+function onVSpecialChange() {
+  const checked = document.getElementById('v-special').checked;
+  const row = document.getElementById('v-special-time-row');
+  if (row) row.style.display = checked ? '' : 'none';
+  visitCalc();
+}
+
+function setSpecialTime(t) {
+  _vSpecialTime = t;
+  ['AM', 'PM', 'both'].forEach(v => {
+    const btn = document.getElementById('spt-' + (v === 'AM' ? 'am' : v === 'PM' ? 'pm' : 'both'));
+    if (btn) btn.classList.toggle('active', v === t);
+  });
+  visitCalc();
+}
+
+function calcSpecialTimes(times, tpd, sTime) {
+  if (tpd <= 1) return times;
+  if (sTime === 'both') return times;
+  if (sTime === 'AM') return Math.round(times * Math.ceil(tpd / 2) / tpd);
+  if (sTime === 'PM') return Math.round(times * Math.floor(tpd / 2) / tpd);
+  return times;
+}
 
 function onVisitPetChange() {
   const pet = pets.find(p => p.id === document.getElementById('v-pet').value);
@@ -299,7 +377,7 @@ function visitCalc() {
   const price    = parseFloat(document.getElementById('v-price').value) || 0;
   const special  = document.getElementById('v-special').checked;
   const distance = document.getElementById('v-distance').checked;
-  let times = '', total = 0;
+  let times = '', total = 0, specialTimes = 0;
 
   if (start && end) {
     const dayDiff = Math.floor((new Date(end) - new Date(start)) / 86400000) + 1;
@@ -307,7 +385,8 @@ function visitCalc() {
     if (sAMPM === 'PM') t -= tpd / 2;
     if (eAMPM === 'AM') t -= tpd / 2;
     times = Math.max(0, Math.ceil(t));
-    total = price * times + (special ? 150 * times : 0) + (distance ? 100 * times : 0);
+    specialTimes = special ? calcSpecialTimes(times, tpd, _vSpecialTime) : 0;
+    total = price * times + (special ? 150 * specialTimes : 0) + (distance ? 100 * times : 0);
   }
 
   document.getElementById('v-times').textContent = times !== '' ? times + ' 次' : '—';
@@ -320,11 +399,11 @@ function visitCalc() {
     const pet   = pets.find(p => p.id === petId);
     if (pet && start && end) {
       document.getElementById('v-msg-preview').textContent =
-        buildVisitMsg({ petName: pet.name, start, end, sAMPM, eAMPM, tpd, times, price, total, special, distance });
+        buildVisitMsg({ petName: pet.name, start, end, sAMPM, eAMPM, tpd, times, price, total, special, distance, specialTime: _vSpecialTime, specialTimes });
       rc.style.display = 'block'; scb.style.display = 'block';
     }
   } else { rc.style.display = 'none'; scb.style.display = 'none'; }
-  return { times, total, special, distance };
+  return { times, total, special, distance, specialTimes };
 }
 
 function buildVisitRec() {
@@ -336,12 +415,12 @@ function buildVisitRec() {
   const price = parseFloat(document.getElementById('v-price').value) || 0;
   if (!price) { toast('⚠️ 請填寫單價'); return null; }
   const pet    = pets.find(p => p.id === petId);
-  const { times, total, special, distance } = visitCalc();
+  const { times, total, special, distance, specialTimes } = visitCalc();
   const pct    = pet?.pct || 0.8;
   const sAMPM  = document.getElementById('v-start-ampm').value;
   const eAMPM  = document.getElementById('v-end-ampm').value;
   const tpd    = parseInt(document.getElementById('v-times-day').value) || 1;
-  return { id: makeId(), type: 'visit', petId, petName: pet?.name || '', operator: getOp(), date: start, start, startAMPM: sAMPM, end, endAMPM: eAMPM, timesDay: tpd, times, price, pct, special, distance, total: Math.round(total), net: Math.round(total * pct), commission: Math.round(total * (1 - pct)), note: document.getElementById('v-note').value.trim(), paid: false, createdAt: new Date().toLocaleString('zh-TW') };
+  return { id: makeId(), type: 'visit', petId, petName: pet?.name || '', operator: getOp(), date: start, start, startAMPM: sAMPM, end, endAMPM: eAMPM, timesDay: tpd, times, price, pct, special, specialTime: _vSpecialTime, specialTimes: special ? specialTimes : 0, distance, total: Math.round(total), net: Math.round(total * pct), commission: Math.round(total * (1 - pct)), note: document.getElementById('v-note').value.trim(), paid: false, createdAt: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Shanghai' }) };
 }
 
 function resetVisit() {
@@ -357,6 +436,14 @@ function resetVisit() {
   document.getElementById('v-end-ampm').value = 'PM';
   document.getElementById('v-result-card').style.display = 'none';
   document.getElementById('v-save-copy-btn').style.display = 'none';
+  // Reset special care timing
+  _vSpecialTime = 'both';
+  const row = document.getElementById('v-special-time-row');
+  if (row) row.style.display = 'none';
+  ['spt-am', 'spt-pm', 'spt-both'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) btn.classList.toggle('active', id === 'spt-both');
+  });
 }
 
 function submitVisit()        { const r = buildVisitRec(); if (!r) return; records.unshift(r); dbSet('records/' + r.id, r); updateMonthFilter(); resetVisit(); toast('✅ 到府紀錄已儲存'); }
@@ -378,8 +465,40 @@ function toggleRecDetail(id) {
 
 function togglePaid(id) {
   const r = records.find(x => x.id === id); if (!r) return;
-  r.paid = !r.paid;
-  dbUpdate('records/' + id, { paid: r.paid });
+  if (r.paid) {
+    // Mark unpaid: clear payee
+    r.paid = false;
+    delete r.payee;
+    dbUpdate('records/' + id, { paid: false, payee: null });
+    renderRecords();
+  } else {
+    // Mark paid: show payee selection modal
+    const modal = document.getElementById('payeeModal');
+    document.getElementById('payee-rec-id').value = id;
+    const list = document.getElementById('payee-list');
+    list.innerHTML = sitters.map(s =>
+      `<label style="display:flex;align-items:center;gap:10px;padding:10px 15px;border-bottom:1px solid var(--border);cursor:pointer;font-size:0.86rem;font-weight:500">
+        <input type="radio" name="payee-radio" value="${esc(s.name)}" style="accent-color:var(--rose);width:16px;height:16px">
+        <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${s.color || 'var(--pink)'};border:1px solid rgba(0,0,0,0.1);flex-shrink:0"></span>
+        ${esc(s.name)}
+      </label>`
+    ).join('');
+    // Pre-select operator if available
+    const radioToCheck = list.querySelector(`input[value="${esc(r.operator)}"]`);
+    if (radioToCheck) radioToCheck.checked = true;
+    openModal('payeeModal');
+  }
+}
+
+function confirmPayee() {
+  const id = document.getElementById('payee-rec-id').value;
+  const r  = records.find(x => x.id === id); if (!r) return;
+  const sel = document.querySelector('input[name="payee-radio"]:checked');
+  if (!sel) { toast('⚠️ 請選擇收款人'); return; }
+  r.paid  = true;
+  r.payee = sel.value;
+  dbUpdate('records/' + id, { paid: true, payee: r.payee });
+  closeModal('payeeModal');
   renderRecords();
 }
 
@@ -476,7 +595,7 @@ function saveEditRec() {
   r.net        = Math.round(r.total * r.pct);
   r.commission = Math.round(r.total * (1 - r.pct));
   r.editedBy   = getOp();
-  r.editedAt   = new Date().toLocaleString('zh-TW');
+  r.editedAt   = new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Shanghai' });
   r.editReason = reason;
   r.editHistory = [...(r.editHistory || []), { editedBy: getOp(), editedAt: r.editedAt, reason, changes }];
 
@@ -505,35 +624,49 @@ function copyRecMsg(id) {
   const r = records.find(x => x.id === id); if (!r) return;
   const msg = r.type === 'stay'
     ? buildStayMsg({ operator: r.operator, petName: r.petName, ciDate: r.ciDate, ciTime: r.ciTime, coDate: r.coDate, coTime: r.coTime, days: r.days, price: r.price, total: r.total, special: r.special, transport: r.transport, transportFee: r.transportFee, fresh: r.fresh, freshPrice: r.freshPrice, freshMeals: r.freshMeals })
-    : buildVisitMsg({ operator: r.operator, petName: r.petName, start: r.start, end: r.end, sAMPM: r.startAMPM, eAMPM: r.endAMPM, tpd: r.timesDay, times: r.times, price: r.price, total: r.total, special: r.special, distance: r.distance });
+    : buildVisitMsg({ operator: r.operator, petName: r.petName, start: r.start, end: r.end, sAMPM: r.startAMPM, eAMPM: r.endAMPM, tpd: r.timesDay, times: r.times, price: r.price, total: r.total, special: r.special, distance: r.distance, specialTime: r.specialTime, specialTimes: r.specialTimes });
   navigator.clipboard.writeText(msg)
     .then(() => toast('✅ 訊息已複製！'))
     .catch(() => { const ta = document.createElement('textarea'); ta.value = msg; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); toast('✅ 訊息已複製！'); });
 }
 
 function renderRecords() {
-  renderCalendar();
   const fm = document.getElementById('monthFilter').value;
   let filtered = fm ? records.filter(r => r.date && r.date.startsWith(fm)) : records;
-  if (calSelectedDate) filtered = filtered.filter(r => r.date === calSelectedDate);
 
   const opMap = {};
   filtered.forEach(r => {
     const op = r.operator || '未知';
-    if (!opMap[op]) opMap[op] = { total: 0, net: 0, commission: 0, count: 0 };
+    if (!opMap[op]) opMap[op] = { total: 0, net: 0, commission: 0, count: 0, owedToCompany: 0, owedToSitter: 0 };
     opMap[op].total += r.total || 0; opMap[op].net += r.net || 0; opMap[op].commission += r.commission || 0; opMap[op].count++;
+    if (r.paid && r.payee) {
+      if (r.payee === r.operator) opMap[op].owedToCompany += r.commission || 0;
+      else                        opMap[op].owedToSitter  += r.net       || 0;
+    }
   });
   const opEl = document.getElementById('opSummary');
   if (Object.keys(opMap).length) {
-    opEl.innerHTML = `<div class="op-summary"><div class="op-hdr">各保母統計</div>${Object.entries(opMap).map(([op, s]) => `
-      <div class="op-row">
-        <span class="op-name">${esc(op)} <small style="font-weight:400;color:var(--muted)">(${s.count}筆)</small></span>
-        <div class="op-nums">
-          <span>總 <span class="hi">${fmt(s.total)}</span></span>
-          <span>實拿 <span class="hi">${fmt(s.net)}</span></span>
-          <span>抽成 ${fmt(s.commission)}</span>
+    opEl.innerHTML = `<div class="op-summary"><div class="op-hdr">各保母統計</div>${Object.entries(opMap).map(([op, s]) => {
+      const netSettle   = s.owedToCompany - s.owedToSitter;
+      const hasSettle   = s.owedToCompany > 0 || s.owedToSitter > 0;
+      const settleHtml  = hasSettle
+        ? `<div class="op-settle">
+             ${s.owedToCompany ? `<span>應付公司 <b>${fmt(s.owedToCompany)}</b></span>` : ''}
+             ${s.owedToSitter  ? `<span>應收公司 <b>${fmt(s.owedToSitter)}</b></span>`  : ''}
+             <span class="${netSettle >= 0 ? 'settle-pay' : 'settle-recv'}">${netSettle >= 0 ? '需付' : '可收'} <b>${fmt(Math.abs(netSettle))}</b></span>
+           </div>` : '';
+      return `<div class="op-row">
+        <div class="op-row-main">
+          <span class="op-name">${esc(op)} <small style="font-weight:400;color:var(--muted)">(${s.count}筆)</small></span>
+          <div class="op-nums">
+            <span>總 <span class="hi">${fmt(s.total)}</span></span>
+            <span>實拿 <span class="hi">${fmt(s.net)}</span></span>
+            <span>抽成 ${fmt(s.commission)}</span>
+          </div>
         </div>
-      </div>`).join('')}</div>`;
+        ${settleHtml}
+      </div>`;
+    }).join('')}</div>`;
   } else opEl.innerHTML = '';
 
   const listEl = document.getElementById('recordsList');
@@ -545,20 +678,25 @@ function renderRecords() {
   listEl.innerHTML = Object.keys(grouped).sort().reverse().map(month => {
     const recs   = grouped[month];
     const mTotal = recs.reduce((a, r) => a + (r.total || 0), 0);
-    const mNet   = recs.reduce((a, r) => a + (r.net || 0), 0);
+    const mNet   = recs.reduce((a, r) => a + ((r.payee && r.payee === r.operator) ? (r.total || 0) : (r.net || 0)), 0);
 
     const recHtml = recs.map(r => {
       const typeLabel  = r.type === 'stay' ? '🏠 住宿' : '🚗 到府';
       const dateRange  = r.type === 'stay' ? `${r.ciDate}${r.ciTime ? ' ' + r.ciTime : ''} → ${r.coDate}${r.coTime ? ' ' + r.coTime : ''}` : `${r.start} → ${r.end}`;
+      const dateMeta   = r.type === 'stay' ? `${fmtD(r.ciDate)} → ${fmtD(r.coDate)}` : `${fmtD(r.start)} → ${fmtD(r.end)}`;
       const qty        = r.type === 'stay' ? r.days + '天' : r.times + '次';
       const pctLabel   = Math.round((r.pct || 0) * 100) + '%';
-      return `<div class="rec-card">
+      const sBg        = getSitterColor(r.operator);
+      // 實拿 display: if payee === operator → full amount; if payee !== operator → net; no payee → net
+      const displayNet = (r.payee && r.payee === r.operator) ? r.total : r.net;
+      const payeeMeta  = r.paid && r.payee ? ` · 收款人: ${esc(r.payee)}` : '';
+      return `<div class="rec-card" style="background:${sBg}18;border-left:3px solid ${sBg}">
         <div class="rec-hdr">
           <div>
             <div class="rec-title">${esc(r.petName)} · ${typeLabel} · <span style="font-size:0.75rem;font-weight:500;color:${r.paid ? 'var(--green)' : 'var(--danger)'}">${r.paid ? '✓ 已付款' : '✗ 未付款'}</span></div>
-            <div class="rec-meta">${r.createdAt || ''} · ${esc(r.operator || '')}</div>
+            <div class="rec-meta">${dateMeta} · ${esc(r.operator || '')}${payeeMeta}</div>
           </div>
-          <div class="rec-amount">${fmt(r.total)}<small>實拿 ${fmt(r.net)} · 抽成 ${pctLabel}</small></div>
+          <div class="rec-amount">${fmt(r.total)}<small>實拿 ${fmt(displayNet)} · 抽成 ${pctLabel}</small></div>
         </div>
         <div class="rec-detail" id="rd-${r.id}">
           <div class="rec-dr"><span class="rec-dl">日期</span><span class="rec-dv">${dateRange}</span></div>
@@ -567,6 +705,7 @@ function renderRecords() {
           <div class="rec-dr"><span class="rec-dl">抽成比例</span><span class="rec-dv">${pctLabel}</span></div>
           <div class="rec-dr"><span class="rec-dl">抽成金額</span><span class="rec-dv">${fmt(r.commission)}</span></div>
           <div class="rec-dr"><span class="rec-dl">付款狀態</span><span class="rec-dv ${r.paid ? 'paid' : 'unpaid'}">${r.paid ? '✓ 已付款' : '✗ 未付款'}</span></div>
+          ${r.paid && r.payee ? `<div class="rec-dr"><span class="rec-dl">收款人</span><span class="rec-dv">${esc(r.payee)}</span></div>` : ''}
           ${r.note ? `<div class="rec-dr"><span class="rec-dl">備註</span><span class="rec-dv">${esc(r.note)}</span></div>` : ''}
           ${buildEditLogHtml(r)}
           <div style="display:flex;gap:7px;padding-top:9px;flex-wrap:wrap">

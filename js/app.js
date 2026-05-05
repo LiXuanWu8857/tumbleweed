@@ -38,10 +38,62 @@ function snapToArray(snap) {
 function initApp() {
   setupDateListeners();
   const db = window._db, r = window._ref, ov = window._onValue;
-  ov(r(db, 'sitters'), (snap) => { sitters = snapToArray(snap); renderSitterList(); populateOpSelect(); populatePetSelects(); renderCarePetGrid(); });
-  ov(r(db, 'pets'),    (snap) => { pets = snapToArray(snap);    renderPetList(); populatePetSelects(); renderCarePetGrid(); });
-  ov(r(db, 'records'), (snap) => { records = snapToArray(snap); updateMonthFilter(); renderRecords(); });
+  let _sitInit = false;
+  ov(r(db, 'sitters'), (snap) => {
+    if (!_sitInit) { _sitInit = true; migrateSittersToIdKeys(snap); }
+    sitters = snapToArray(snap); renderSitterList(); populateOpSelect(); populatePetSelects(); renderCarePetGrid(); renderCalendar();
+  });
+  let _petInit = false;
+  ov(r(db, 'pets'), (snap) => {
+    if (!_petInit) { _petInit = true; migratePetsToIdKeys(snap); }
+    pets = snapToArray(snap);
+    renderPetList(); populatePetSelects(); renderCarePetGrid();
+  });
+  let _recInit = false;
+  ov(r(db, 'records'), (snap) => {
+    if (!_recInit) { _recInit = true; migrateRecordsToIdKeys(snap); }
+    records = snapToArray(snap); updateMonthFilter(); renderRecords(); renderCalendar();
+  });
   setDateDefaults();
+}
+
+function migratePetsToIdKeys(snap) {
+  const val = snap.val();
+  if (!val || typeof val !== 'object') return;
+  const numericKeys = Object.keys(val).filter(k => /^\d+$/.test(k));
+  if (!numericKeys.length) return;
+  numericKeys.forEach(k => {
+    const pet = val[k];
+    if (!pet || !pet.id) return;
+    dbSet('pets/' + pet.id, pet);
+    dbRemove('pets/' + k);
+  });
+}
+
+function migrateSittersToIdKeys(snap) {
+  const val = snap.val();
+  if (!val || typeof val !== 'object') return;
+  const numericKeys = Object.keys(val).filter(k => /^\d+$/.test(k));
+  if (!numericKeys.length) return;
+  numericKeys.forEach(k => {
+    const s = val[k];
+    if (!s || !s.id) return;
+    dbSet('sitters/' + s.id, s);
+    dbRemove('sitters/' + k);
+  });
+}
+
+function migrateRecordsToIdKeys(snap) {
+  const val = snap.val();
+  if (!val || typeof val !== 'object') return;
+  const numericKeys = Object.keys(val).filter(k => /^\d+$/.test(k));
+  if (!numericKeys.length) return;
+  numericKeys.forEach(k => {
+    const rec = val[k];
+    if (!rec || !rec.id) return;
+    dbSet('records/' + rec.id, rec);
+    dbRemove('records/' + k);
+  });
 }
 
 function setDateDefaults() {
@@ -65,7 +117,7 @@ function setupDateListeners() {
 }
 
 // ══ Helpers ══
-const todayStr = () => new Date().toISOString().slice(0, 10);
+const todayStr = () => new Date().toLocaleDateString('sv', { timeZone: 'Asia/Shanghai' });
 const makeId = () => Date.now() + '_' + Math.random().toString(36).slice(2);
 const esc = s => String(s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const fmt = n => '$' + Math.round(n).toLocaleString();
@@ -85,6 +137,7 @@ function switchTab(tab) {
   });
   if (['stay', 'visit', 'care'].includes(tab)) populatePetSelects();
   if (tab === 'care') renderCarePetGrid();
+  if (tab === 'sitters') renderCalendar();
   if (tab === 'records') { updateMonthFilter(); renderRecords(); }
 }
 

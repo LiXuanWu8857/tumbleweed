@@ -447,6 +447,17 @@ function submitVisitAndCopy() { const r = buildVisitRec(); if (!r) return; copyM
 
 let batchMode = false;
 let batchSelected = new Set();
+let recOpFilter = null;
+
+function recSetOpFilter(name) {
+  recOpFilter = name;
+  renderRecords();
+}
+
+function recSetOpFilterFromBtn(btn) {
+  recOpFilter = recOpFilter === btn.dataset.name ? null : btn.dataset.name;
+  renderRecords();
+}
 
 function toggleBatchMode() {
   batchMode = !batchMode;
@@ -702,6 +713,28 @@ function copyRecMsg(id) {
 function renderRecords() {
   const fm = document.getElementById('monthFilter').value;
   let filtered = fm ? records.filter(r => r.date && r.date.startsWith(fm)) : records;
+
+  // Render sitter filter pills
+  const filterEl = document.getElementById('recSitterFilter');
+  if (filterEl) {
+    const opNames = [...new Set(filtered.map(r => r.operator).filter(Boolean))];
+    if (opNames.length >= 1) {
+      filterEl.innerHTML =
+        `<button class="cal-sitter-pill all-pill${!recOpFilter ? ' active' : ''}" onclick="recSetOpFilter(null)">全部</button>` +
+        opNames.map(name => {
+          const bg  = getSitterColor(name);
+          const txt = isColorDark(bg) ? '#fff' : '#2a1a1d';
+          return `<button class="cal-sitter-pill${recOpFilter === name ? ' active' : ''}" style="background:${bg};color:${txt}" data-name="${esc(name)}" onclick="recSetOpFilterFromBtn(this)"><span class="cal-sitter-dot" style="background:${isColorDark(bg) ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.2)'}"></span>${esc(name)}</button>`;
+        }).join('');
+      filterEl.style.display = '';
+    } else {
+      filterEl.style.display = 'none';
+      recOpFilter = null;
+    }
+  }
+
+  // Apply operator filter
+  if (recOpFilter) filtered = filtered.filter(r => r.operator === recOpFilter);
 
   const opMap = {};
   filtered.forEach(r => {

@@ -70,7 +70,8 @@
 
 <!-- ══ 寵物 ══ -->
 <div id="page-pets" class="page"><div class="container">
-  <div class="sec-title">寵物名單 <button class="item-edit-btn" style="font-size:0.7rem;padding:3px 10px;margin-left:2px" onclick="openPetModal()">＋ 新增</button></div>
+  <div class="sec-title">寵物名單</div>
+  <button class="btn-secondary" onclick="openPetModal()">＋ 新增寵物資料</button>
   <div id="petList"></div>
 </div></div>
 
@@ -408,6 +409,21 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- ══ Edit Check Step Modal ══ -->
+<div class="modal-bg" id="editCheckStepModal" onclick="closeBg('editCheckStepModal',event)">
+  <div class="modal">
+    <div class="modal-title"><span>編輯步驟</span><button class="modal-close" onclick="closeModal('editCheckStepModal')">✕</button></div>
+    <input type="hidden" id="ecs-pet-id">
+    <input type="hidden" id="ecs-step-id">
+    <div class="form-row"><label>步驟名稱</label><input class="f" id="ecs-text" placeholder="步驟名稱"></div>
+    <div class="form-row"><label>說明</label><textarea class="f" id="ecs-desc" placeholder="細項內容..." style="height:100px"></textarea></div>
+    <div class="form-actions">
+      <button class="btn-cancel-form" onclick="closeModal('editCheckStepModal')">取消</button>
+      <button class="btn-save-form" onclick="saveCheckStepModal()">儲存</button>
+    </div>
+  </div>
+</div>
 
 <!-- ══ Payee Modal ══ -->
 <div class="modal-bg" id="payeeModal" onclick="closeBg('payeeModal',event)">

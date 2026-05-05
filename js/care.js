@@ -86,7 +86,6 @@ function dEnd() { dragSrcEl = null; }
 // ══ 備忘 Checklist ══
 let checkState = {};
 let activeCareId = null;
-let editCheckStepId = null;
 
 function renderCarePetGrid() {
   const grid = document.getElementById('care-pet-grid');
@@ -122,14 +121,12 @@ function renderCarePetGrid() {
 
 function backToPetGrid() {
   activeCareId = null;
-  editCheckStepId = null;
   document.getElementById('care-checklist-wrap').innerHTML = '';
   renderCarePetGrid();
 }
 
 function toggleCareAccordion(petId) {
   activeCareId = petId;
-  editCheckStepId = null;
   const pet = pets.find(p => p.id === petId); if (!pet) return;
   checkState = {};
   pet.careSteps.forEach(s => checkState[s.id] = false);
@@ -137,25 +134,25 @@ function toggleCareAccordion(petId) {
   renderChecklistNew(pet);
 }
 
-function editCheckStep(stepId) {
-  editCheckStepId = stepId;
-  const pet = pets.find(p => p.id === activeCareId);
-  if (pet) renderChecklistNew(pet);
-}
-function cancelCheckStepEdit() {
-  editCheckStepId = null;
-  const pet = pets.find(p => p.id === activeCareId);
-  if (pet) renderChecklistNew(pet);
-}
-function saveCheckStep(petId, stepId) {
+function editCheckStep(petId, stepId) {
   const pet = pets.find(p => p.id === petId); if (!pet) return;
   const step = pet.careSteps.find(s => s.id === stepId); if (!step) return;
-  const textEl = document.getElementById('cse-text-' + stepId);
-  const descEl = document.getElementById('cse-desc-' + stepId);
-  if (textEl) step.text = textEl.value;
-  if (descEl) step.desc = descEl.value;
-  editCheckStepId = null;
+  document.getElementById('ecs-pet-id').value = petId;
+  document.getElementById('ecs-step-id').value = stepId;
+  document.getElementById('ecs-text').value = step.text || '';
+  document.getElementById('ecs-desc').value = step.desc || '';
+  openModal('editCheckStepModal');
+}
+
+function saveCheckStepModal() {
+  const petId  = document.getElementById('ecs-pet-id').value;
+  const stepId = document.getElementById('ecs-step-id').value;
+  const pet = pets.find(p => p.id === petId); if (!pet) return;
+  const step = pet.careSteps.find(s => s.id === stepId); if (!step) return;
+  step.text = document.getElementById('ecs-text').value.trim();
+  step.desc = document.getElementById('ecs-desc').value.trim();
   dbSet('pets/' + petId, pet);
+  closeModal('editCheckStepModal');
   renderChecklistNew(pet);
   renderCarePetGrid();
   toast('✅ 步驟已更新');
@@ -183,18 +180,6 @@ function renderChecklistNew(pet) {
   };
 
   const renderStep = (s) => {
-    if (editCheckStepId === s.id) {
-      return `<div class="check-item editing">
-        <div class="check-edit-form">
-          <input id="cse-text-${s.id}" value="${esc(s.text)}" placeholder="步驟名稱">
-          <textarea id="cse-desc-${s.id}">${esc(s.desc || '')}</textarea>
-          <div class="check-edit-actions">
-            <button class="btn-ghost" style="font-size:0.74rem" onclick="saveCheckStep('${pet.id}','${s.id}')">✓ 儲存</button>
-            <button class="btn-ghost" style="font-size:0.74rem" onclick="cancelCheckStepEdit()">取消</button>
-          </div>
-        </div>
-      </div>`;
-    }
     const isAddr = s.text.includes('地址');
     return `
       <div class="check-item ${checkState[s.id] ? 'done' : ''}" id="ci-${s.id}">
@@ -208,7 +193,7 @@ function renderChecklistNew(pet) {
           ${chipMap[s.time || ''] || ''}
           ${s.photoData ? `<img src="${s.photoData}" class="check-step-photo" onclick="window.open(this.src)">` : ''}
         </div>
-        <button class="check-edit-btn" onclick="editCheckStep('${s.id}')" title="編輯此步驟">✏️</button>
+        <button class="check-edit-btn" onclick="editCheckStep('${pet.id}','${s.id}')" title="編輯此步驟">✏️</button>
       </div>`;
   };
 

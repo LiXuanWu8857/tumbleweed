@@ -333,7 +333,7 @@ function calQuickVisitCalc() {
   el.innerHTML = `<span style="color:var(--muted)">共 ${times} 次 · 單價 $${basePrice}</span><span style="font-weight:700;color:var(--rose)">總計 $${total}</span>`;
 }
 
-function submitCalQuick() {
+function submitCalQuick(andCopy = false) {
   const pet = pets.find(p => p.id === document.getElementById('cq-pet').value);
   if (!pet) { toast('⚠️ 請選擇寵物'); return; }
   const op  = getOp();
@@ -405,7 +405,17 @@ function submitCalQuick() {
   updateMonthFilter();
   renderRecords();
   renderCalendar();
-  toast('✅ 預約已儲存');
+
+  if (andCopy) {
+    const msg = rec.type === 'stay'
+      ? buildStayMsg({ operator: rec.operator, petName: rec.petName, ciDate: rec.ciDate, ciTime: rec.ciTime, coDate: rec.coDate, coTime: rec.coTime, days: rec.days, price: rec.price, total: rec.total, special: rec.special, transport: rec.transport, transportFee: rec.transportFee, fresh: rec.fresh, freshPrice: rec.freshPrice, freshMeals: rec.freshMeals })
+      : buildVisitMsg({ operator: rec.operator, petName: rec.petName, start: rec.start, end: rec.end, sAMPM: rec.startAMPM, eAMPM: rec.endAMPM, tpd: rec.timesDay, times: rec.times, price: rec.price, total: rec.total, special: rec.special, distance: rec.distance, specialTime: rec.specialTime, specialTimes: rec.specialTimes });
+    navigator.clipboard.writeText(msg)
+      .then(() => toast('✅ 已儲存並複製 LINE 訊息！'))
+      .catch(() => { const ta = document.createElement('textarea'); ta.value = msg; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); toast('✅ 已儲存並複製 LINE 訊息！'); });
+  } else {
+    toast('✅ 預約已儲存');
+  }
 }
 
 // ══ Helpers ══

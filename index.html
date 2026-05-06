@@ -390,6 +390,18 @@
   </div>
 </div>
 
+<!-- ══ Calendar Event Popup ══ -->
+<div class="modal-bg" id="calEventModal" onclick="closeBg('calEventModal',event)">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="cev-title">預約詳情</span>
+      <button class="modal-close" onclick="closeModal('calEventModal')">✕</button>
+    </div>
+    <div id="cev-body" style="margin-bottom:14px"></div>
+    <div id="cev-actions" class="form-actions" style="padding:0"></div>
+  </div>
+</div>
+
 <!-- ══ Edit Record Modal ══ -->
 <div class="modal-bg" id="editRecModal" onclick="closeBg('editRecModal',event)">
   <div class="modal">

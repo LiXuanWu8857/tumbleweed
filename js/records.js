@@ -134,7 +134,7 @@ function renderCalendar() {
         const span   = Math.max(1, safeC2 - safeC1 + 1);
         const lbl    = cL ? ('↵ ' + evt.label) : evt.label;
         const cls    = `cal-event-bar${cL ? ' no-left' : ''}${cR ? ' no-right' : ''}`;
-        html += `<div class="${cls}" style="grid-row:${lane + 2};grid-column:${safeC1 + 1}/span ${span};background:${evt.bg};color:${evt.fg}" title="${esc(evt.label)}">${esc(lbl)}</div>`;
+        html += `<div class="${cls}" style="grid-row:${lane + 2};grid-column:${safeC1 + 1}/span ${span};background:${evt.bg};color:${evt.fg}" title="${esc(evt.label)}" onclick="openCalEventModal('${evt.id}')">${esc(lbl)}</div>`;
       });
     }
 
@@ -157,6 +157,30 @@ function renderCalendar() {
 
 function calPrev() { calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; } renderCalendar(); }
 function calNext() { calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; } renderCalendar(); }
+
+function openCalEventModal(id) {
+  const r = records.find(x => x.id === id); if (!r) return;
+  const isStay    = r.type === 'stay';
+  const typeLabel = isStay ? '🏠 住宿' : '🚗 到府';
+  const dateRange = isStay
+    ? `${r.ciDate}${r.ciTime ? ' ' + r.ciTime.slice(0,5) : ''} → ${r.coDate}${r.coTime ? ' ' + r.coTime.slice(0,5) : ''}`
+    : `${r.start} → ${r.end}`;
+  const qty       = isStay ? (r.days + ' 天') : (r.times + ' 次');
+  const paidTxt   = r.paid ? ('✓ 已付款' + (r.payee ? ' · ' + r.payee : '')) : '✗ 未付款';
+
+  document.getElementById('cev-title').textContent = r.petName + ' · ' + typeLabel;
+  document.getElementById('cev-body').innerHTML = `
+    <div class="rec-dr"><span class="rec-dl">日期</span><span class="rec-dv">${esc(dateRange)}</span></div>
+    <div class="rec-dr"><span class="rec-dl">數量</span><span class="rec-dv">${esc(qty)}</span></div>
+    <div class="rec-dr"><span class="rec-dl">保母</span><span class="rec-dv">${esc(r.operator || '')}</span></div>
+    <div class="rec-dr"><span class="rec-dl">金額</span><span class="rec-dv">${fmt(r.total)}</span></div>
+    <div class="rec-dr"><span class="rec-dl">付款</span><span class="rec-dv ${r.paid ? 'paid' : 'unpaid'}">${paidTxt}</span></div>
+    ${r.note ? `<div class="rec-dr"><span class="rec-dl">備註</span><span class="rec-dv">${esc(r.note)}</span></div>` : ''}`;
+  document.getElementById('cev-actions').innerHTML =
+    (r.petId ? `<button class="btn-ghost" style="flex:1" onclick="closeModal('calEventModal');openCareModal('${r.petId}')">📋 照護手冊</button>` : '') +
+    `<button class="btn-ghost" style="flex:1" onclick="closeModal('calEventModal');openEditRecModal('${id}')">✏️ 編輯預約</button>`;
+  openModal('calEventModal');
+}
 
 function calSelectDate(dateStr) {
   calSelectedDate = calSelectedDate === dateStr ? null : dateStr;
@@ -682,6 +706,7 @@ function saveEditRec() {
   dbSet('records/' + id, r);
   closeModal('editRecModal');
   renderRecords();
+  renderCalendar();
   toast('✅ 紀錄已更新');
 }
 

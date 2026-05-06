@@ -48,53 +48,6 @@ function populatePetSelects() {
   });
 }
 
-function openAllPetsModal() {
-  const list = document.getElementById('all-pets-edit-list');
-  if (!pets.length) {
-    list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted)">尚無寵物資料</div>';
-    openModal('allPetsModal');
-    return;
-  }
-  list.innerHTML = pets.map(p => `
-    <div style="padding:12px 0;border-bottom:1px solid var(--border)">
-      <div style="font-weight:700;font-size:0.86rem;margin-bottom:8px;color:var(--text)">🐾 ${esc(p.name)}</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 12px">
-        <div>
-          <div style="font-size:0.7rem;color:var(--muted);margin-bottom:3px">住宿 / 天</div>
-          <input type="number" class="f" id="ape-stay-${p.id}" value="${p.stayPrice || ''}" placeholder="0">
-        </div>
-        <div>
-          <div style="font-size:0.7rem;color:var(--muted);margin-bottom:3px">安親 / 8hr</div>
-          <input type="number" class="f" id="ape-daycare-${p.id}" value="${p.daycarePrice || ''}" placeholder="0">
-        </div>
-        <div>
-          <div style="font-size:0.7rem;color:var(--muted);margin-bottom:3px">到府 / 次</div>
-          <input type="number" class="f" id="ape-visit-${p.id}" value="${p.visitPrice || ''}" placeholder="0">
-        </div>
-        <div>
-          <div style="font-size:0.7rem;color:var(--muted);margin-bottom:3px">抽成比例</div>
-          <input type="number" class="f" id="ape-pct-${p.id}" value="${p.pct || 0.8}" placeholder="0.8" step="0.05" min="0" max="1">
-        </div>
-      </div>
-    </div>`).join('');
-  openModal('allPetsModal');
-}
-
-function saveAllPets() {
-  pets.forEach(p => {
-    const stay    = parseFloat(document.getElementById('ape-stay-'    + p.id)?.value) || 0;
-    const daycare = parseFloat(document.getElementById('ape-daycare-' + p.id)?.value) || 0;
-    const visit   = parseFloat(document.getElementById('ape-visit-'   + p.id)?.value) || 0;
-    const pct     = parseFloat(document.getElementById('ape-pct-'     + p.id)?.value) || 0.8;
-    p.stayPrice = stay; p.daycarePrice = daycare; p.visitPrice = visit; p.pct = pct;
-    dbSet('pets/' + p.id, p);
-  });
-  closeModal('allPetsModal');
-  renderPetList();
-  populatePetSelects();
-  toast('✅ 所有寵物資料已儲存');
-}
-
 function openPetModal(editId) {
   document.getElementById('pm-id').value = editId || '';
   if (editId) {

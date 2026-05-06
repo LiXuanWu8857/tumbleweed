@@ -106,6 +106,7 @@ function renderCarePetGrid() {
         </div>
         ${pet ? `<button class="pet-grid-edit-btn" style="pointer-events:all" onclick="openEditPetModal('${pet.id}')" title="編輯">✏️</button>` : ''}
       </div>
+      ${pet ? `<button class="item-edit-btn" onclick="openBatchCareModal('${pet.id}')">批次編輯</button>` : ''}
     </div>`;
     return;
   }
@@ -230,4 +231,39 @@ function resetChecklistNew(petId) {
   const pet = pets.find(p => p.id === petId); if (!pet) return;
   pet.careSteps.forEach(s => checkState[s.id] = false);
   renderChecklistNew(pet);
+}
+
+function openBatchCareModal(petId) {
+  const pet = pets.find(p => p.id === petId); if (!pet) return;
+  document.getElementById('bce-pet-id').value = petId;
+  document.getElementById('batchCareTitle').textContent = pet.name + ' · 批次編輯步驟';
+  const list = document.getElementById('batch-care-edit-list');
+  if (!pet.careSteps || !pet.careSteps.length) {
+    list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted)">暫無照護步驟</div>';
+    openModal('batchCareModal');
+    return;
+  }
+  list.innerHTML = pet.careSteps.map((s, i) => `
+    <div style="padding:12px 0;border-bottom:1px solid var(--border)">
+      <div style="font-size:0.7rem;color:var(--muted);margin-bottom:4px;font-weight:600">步驟 ${i + 1}</div>
+      <input class="f" id="bce-text-${s.id}" value="${esc(s.text)}" placeholder="步驟名稱" style="margin-bottom:6px">
+      <textarea class="f" id="bce-desc-${s.id}" placeholder="說明（細項內容）">${esc(s.desc || '')}</textarea>
+    </div>`).join('');
+  openModal('batchCareModal');
+}
+
+function saveBatchCare() {
+  const petId = document.getElementById('bce-pet-id').value;
+  const pet = pets.find(p => p.id === petId); if (!pet) return;
+  pet.careSteps.forEach(s => {
+    const t = document.getElementById('bce-text-' + s.id);
+    const d = document.getElementById('bce-desc-' + s.id);
+    if (t) s.text = t.value.trim();
+    if (d) s.desc = d.value.trim();
+  });
+  dbSet('pets/' + petId, pet);
+  closeModal('batchCareModal');
+  renderChecklistNew(pet);
+  renderCarePetGrid();
+  toast('✅ 照護步驟已更新');
 }

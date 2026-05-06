@@ -70,10 +70,7 @@
 
 <!-- ══ 寵物 ══ -->
 <div id="page-pets" class="page"><div class="container">
-  <div style="display:flex;gap:8px;margin-bottom:14px">
-    <button class="btn-secondary" style="flex:1;margin:0" onclick="openPetModal()">＋ 新增</button>
-    <button class="btn-secondary" style="flex:1;margin:0" onclick="openAllPetsModal()">✏️ 批次編輯</button>
-  </div>
+  <button class="btn-secondary" onclick="openPetModal()">＋ 新增寵物資料</button>
   <div class="sec-title">寵物名單</div>
   <div id="petList"></div>
 </div></div>
@@ -333,16 +330,17 @@
   </div>
 </div>
 
-<!-- ══ All Pets Edit Modal ══ -->
-<div class="modal-bg" id="allPetsModal" onclick="closeBg('allPetsModal',event)">
+<!-- ══ Batch Care Edit Modal ══ -->
+<div class="modal-bg" id="batchCareModal" onclick="closeBg('batchCareModal',event)">
   <div class="modal" style="padding:0;display:flex;flex-direction:column;max-height:85vh">
     <div style="padding:18px 18px 0;flex-shrink:0;background:#fff;border-radius:22px 22px 0 0">
-      <div class="modal-title"><span>批次編輯寵物</span><button class="modal-close" onclick="closeModal('allPetsModal')">✕</button></div>
+      <div class="modal-title"><span id="batchCareTitle">批次編輯照護步驟</span><button class="modal-close" onclick="closeModal('batchCareModal')">✕</button></div>
     </div>
-    <div id="all-pets-edit-list" style="padding:0 18px;overflow-y:auto;flex:1"></div>
+    <input type="hidden" id="bce-pet-id">
+    <div id="batch-care-edit-list" style="padding:0 18px;overflow-y:auto;flex:1"></div>
     <div class="form-actions" style="flex-shrink:0;padding:12px 18px;border-top:1px solid var(--border)">
-      <button class="btn-cancel-form" onclick="closeModal('allPetsModal')">取消</button>
-      <button class="btn-save-form" onclick="saveAllPets()">全部儲存</button>
+      <button class="btn-cancel-form" onclick="closeModal('batchCareModal')">取消</button>
+      <button class="btn-save-form" onclick="saveBatchCare()">全部儲存</button>
     </div>
   </div>
 </div>

@@ -165,14 +165,18 @@ function openCalEventModal(id) {
   const dateRange = isStay
     ? `${r.ciDate}${r.ciTime ? ' ' + r.ciTime.slice(0,5) : ''} → ${r.coDate}${r.coTime ? ' ' + r.coTime.slice(0,5) : ''}`
     : `${r.start} → ${r.end}`;
-  const qty       = isStay ? (r.days + ' 天') : (r.times + ' 次');
-  const paidTxt   = r.paid ? ('✓ 已付款' + (r.payee ? ' · ' + r.payee : '')) : '✗ 未付款';
+  const qty     = isStay ? (r.days + ' 天') : (r.times + ' 次');
+  const paidTxt = r.paid ? ('✓ 已付款' + (r.payee ? ' · ' + r.payee : '')) : '✗ 未付款';
+  const opOpts  = sitters.map(s => `<option value="${esc(s.name)}" ${s.name === r.operator ? 'selected' : ''}>${esc(s.name)}</option>`).join('');
 
   document.getElementById('cev-title').textContent = r.petName + ' · ' + typeLabel;
   document.getElementById('cev-body').innerHTML = `
     <div class="rec-dr"><span class="rec-dl">日期</span><span class="rec-dv">${esc(dateRange)}</span></div>
     <div class="rec-dr"><span class="rec-dl">數量</span><span class="rec-dv">${esc(qty)}</span></div>
-    <div class="rec-dr"><span class="rec-dl">保母</span><span class="rec-dv">${esc(r.operator || '')}</span></div>
+    <div class="rec-dr" style="gap:6px"><span class="rec-dl">輸入者</span>
+      <select class="f" id="cev-operator" style="flex:1;font-size:0.8rem;padding:3px 6px;height:28px">${opOpts}</select>
+      <button class="btn-ghost" style="padding:3px 10px;font-size:0.78rem;height:28px" onclick="saveCalEventOperator('${id}')">套用</button>
+    </div>
     <div class="rec-dr"><span class="rec-dl">金額</span><span class="rec-dv">${fmt(r.total)}</span></div>
     <div class="rec-dr"><span class="rec-dl">付款</span><span class="rec-dv ${r.paid ? 'paid' : 'unpaid'}">${paidTxt}</span></div>
     ${r.note ? `<div class="rec-dr"><span class="rec-dl">備註</span><span class="rec-dv">${esc(r.note)}</span></div>` : ''}`;
@@ -180,6 +184,17 @@ function openCalEventModal(id) {
     (r.petId ? `<button class="btn-ghost" style="flex:1" onclick="closeModal('calEventModal');openCareModal('${r.petId}')">📋 照護手冊</button>` : '') +
     `<button class="btn-ghost" style="flex:1" onclick="closeModal('calEventModal');openEditRecModal('${id}')">✏️ 編輯預約</button>`;
   openModal('calEventModal');
+}
+
+function saveCalEventOperator(id) {
+  const r = records.find(x => x.id === id); if (!r) return;
+  const newOp = document.getElementById('cev-operator').value;
+  if (!newOp || newOp === r.operator) return;
+  r.operator = newOp;
+  dbUpdate('records/' + id, { operator: newOp });
+  renderRecords();
+  renderCalendar();
+  toast('✅ 輸入者已更新');
 }
 
 function calSelectDate(dateStr) {

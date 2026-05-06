@@ -258,17 +258,17 @@ function onCqVEndChange() {
 }
 
 function openCalQuickAdd(dateStr) {
-  if (!getOp() || getOp() === '未知') { toast('⚠️ 請先在右上角選擇輸入者'); return; }
-  const nextDay = new Date(dateStr + 'T12:00:00');
-  nextDay.setDate(nextDay.getDate() + 1);
-  const nextDayStr = nextDay.toISOString().slice(0, 10);
+  // populate operator select (no guard — let user pick inside modal)
+  const opSel = document.getElementById('cq-operator');
+  opSel.innerHTML = '<option value="">— 請選擇 —</option>' +
+    sitters.map(s => `<option value="${esc(s.name)}" ${s.name === getOp() ? 'selected' : ''}>${esc(s.name)}</option>`).join('');
 
   const petSel = document.getElementById('cq-pet');
   petSel.innerHTML = '<option value="">— 請選擇 —</option>' +
     pets.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('');
 
   document.getElementById('cq-ci-date').value = dateStr;
-  document.getElementById('cq-co-date').value = nextDayStr;
+  document.getElementById('cq-co-date').value = dateStr;   // same-day default
   document.getElementById('cq-ci-time').value = '';
   document.getElementById('cq-co-time').value = '';
   document.getElementById('cq-s-price').value = '';
@@ -289,7 +289,7 @@ function openCalQuickAdd(dateStr) {
   document.getElementById('cq-s-result').style.display = 'none';
   document.getElementById('cq-v-result').style.display = 'none';
   document.getElementById('cq-msg-wrap').style.display = 'none';
-  cqStayOffset = 1; cqVisitOffset = 0;
+  cqStayOffset = 0; cqVisitOffset = 0;
   switchCalQuickType('stay');
   openModal('calQuickModal');
 }
@@ -341,7 +341,7 @@ function calQuickStayCalc() {
 
   const pet = pets.find(p => p.id === document.getElementById('cq-pet').value);
   if (pet) {
-    document.getElementById('cq-msg-preview').textContent = buildStayMsg({ operator: getOp(), petName: pet.name, ciDate, ciTime, coDate, coTime, days, price, total, special, transport, transportFee: tFee, fresh, freshPrice: fPrice, freshMeals: meals });
+    document.getElementById('cq-msg-preview').textContent = buildStayMsg({ operator: document.getElementById('cq-operator').value || getOp(), petName: pet.name, ciDate, ciTime, coDate, coTime, days, price, total, special, transport, transportFee: tFee, fresh, freshPrice: fPrice, freshMeals: meals });
     msgWrap.style.display = '';
   }
 }
@@ -374,7 +374,7 @@ function calQuickVisitCalc() {
   const pet = pets.find(p => p.id === document.getElementById('cq-pet').value);
   const msgWrap = document.getElementById('cq-msg-wrap');
   if (pet) {
-    document.getElementById('cq-msg-preview').textContent = buildVisitMsg({ operator: getOp(), petName: pet.name, start, end, sAMPM, eAMPM, tpd, times, price, total, special, distance: dist, specialTime: null, specialTimes: spTimes });
+    document.getElementById('cq-msg-preview').textContent = buildVisitMsg({ operator: document.getElementById('cq-operator').value || getOp(), petName: pet.name, start, end, sAMPM, eAMPM, tpd, times, price, total, special, distance: dist, specialTime: null, specialTimes: spTimes });
     msgWrap.style.display = '';
   }
 }
@@ -382,7 +382,8 @@ function calQuickVisitCalc() {
 function submitCalQuick(andCopy = false) {
   const pet = pets.find(p => p.id === document.getElementById('cq-pet').value);
   if (!pet) { toast('⚠️ 請選擇寵物'); return; }
-  const op  = getOp();
+  const op = document.getElementById('cq-operator').value;
+  if (!op) { toast('⚠️ 請選擇輸入者'); return; }
   const note = document.getElementById('cq-note').value.trim();
   const pct  = pet.pct ?? 0.8;
   let rec;

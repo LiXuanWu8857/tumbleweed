@@ -404,6 +404,9 @@
       </div>
     </div>
     <div style="overflow-y:auto;flex:1;padding:0 18px 8px">
+      <div class="form-row"><label>輸入者</label>
+        <select class="f" id="cq-operator"><option value="">— 請選擇 —</option></select>
+      </div>
       <div class="form-row"><label>寵物</label>
         <select class="f" id="cq-pet" onchange="onCalQuickPetChange()"><option value="">— 請選擇 —</option></select>
       </div>
@@ -457,7 +460,7 @@
     </div>
     <div class="form-actions" style="flex-shrink:0;padding:12px 18px;border-top:1px solid var(--border);margin:0">
       <button class="btn-cancel-form" onclick="closeModal('calQuickModal')">取消</button>
-      <button class="btn-secondary" style="flex:1" onclick="submitCalQuick(true)">📋 複製 LINE</button>
+      <button style="flex:1;padding:11px;background:#fff;color:var(--rose);border:1.5px solid var(--pink-md);border-radius:var(--rad-sm);font-family:inherit;font-size:0.83rem;font-weight:700;cursor:pointer" onclick="submitCalQuick(true)">📋 複製 LINE</button>
       <button class="btn-save-form" onclick="submitCalQuick()">✓ 儲存</button>
     </div>
   </div>

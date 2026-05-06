@@ -60,6 +60,10 @@ function buildStayMsg(r) {
 function buildVisitMsg(r) {
   const sLabel       = fmtD(r.start) + ' ' + (r.sAMPM === 'AM' ? '早上' : '晚上');
   const eLabel       = fmtD(r.end)   + ' ' + (r.eAMPM === 'AM' ? '早上' : '晚上');
+  const sameDay      = r.start === r.end;
+  const timeRange    = sameDay
+    ? (r.sAMPM === r.eAMPM ? sLabel : fmtD(r.start) + ' ' + (r.sAMPM === 'AM' ? '早上' : '晚上') + ' ~ ' + (r.eAMPM === 'AM' ? '早上' : '晚上'))
+    : sLabel + ' ~ ' + eLabel;
   const tpd          = r.tpd || r.timesDay || 1;
   const bank         = getSitterBank(r.operator);
   const specialTimes = r.special ? (r.specialTimes || r.times) : 0;
@@ -73,7 +77,7 @@ function buildVisitMsg(r) {
 
   const lines = [
     r.petName,
-    '時段 - ' + sLabel + ' ~ ' + eLabel,
+    '時段 - ' + timeRange,
     '每日 ' + tpd + ' 次 · 共 ' + r.times + ' 次',
     '',
     '到府費用 ' + r.price + '$ / 次',

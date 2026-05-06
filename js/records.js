@@ -118,9 +118,9 @@ function renderCalendar() {
 
     weekDs.forEach((ds, col) => {
       if (!ds) { html += `<div class="cal-day-cell empty" style="grid-row:1;grid-column:${col + 1}"></div>`; return; }
-      const isToday = ds === today, isSel = ds === calSelectedDate;
+      const isToday = ds === today;
       const dayNum  = parseInt(ds.slice(8));
-      html += `<div class="cal-day-cell${isToday ? ' today' : ''}${isSel ? ' selected' : ''}" style="grid-row:1;grid-column:${col + 1}" onclick="calSelectDate('${ds}')"><span class="cal-day-num">${dayNum}</span></div>`;
+      html += `<div class="cal-day-cell${isToday ? ' today' : ''}" style="grid-row:1;grid-column:${col + 1}" onclick="openCalQuickAdd('${ds}')"><span class="cal-day-num">${dayNum}</span></div>`;
     });
 
     for (let lane = 0; lane < lanes.length; lane++) {
@@ -143,16 +143,7 @@ function renderCalendar() {
 
   gridEl.innerHTML = html;
 
-  if (hintEl) {
-    if (calSelectedDate) {
-      const p = calSelectedDate.split('-');
-      hintEl.textContent = parseInt(p[1]) + '/' + parseInt(p[2]) + ' · 點擊取消';
-      hintEl.style.display = '';
-      hintEl.onclick = () => calSelectDate(calSelectedDate);
-    } else {
-      hintEl.style.display = 'none';
-    }
-  }
+  if (hintEl) hintEl.style.display = 'none';
 }
 
 function calPrev() { calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; } renderCalendar(); }
@@ -217,6 +208,190 @@ function calSetSitterFilterFromBtn(btn) {
   const name = btn.dataset.name;
   calSitterFilter = calSitterFilter === name ? null : name;
   renderCalendar();
+}
+
+// ══ Calendar Quick Add ══
+let calQuickType = 'stay';
+
+function openCalQuickAdd(dateStr) {
+  if (!getOp() || getOp() === '未知') { toast('⚠️ 請先在右上角選擇輸入者'); return; }
+  const nextDay = new Date(dateStr + 'T12:00:00');
+  nextDay.setDate(nextDay.getDate() + 1);
+  const nextDayStr = nextDay.toISOString().slice(0, 10);
+
+  const petSel = document.getElementById('cq-pet');
+  petSel.innerHTML = '<option value="">— 請選擇 —</option>' +
+    pets.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('');
+
+  document.getElementById('cq-ci-date').value = dateStr;
+  document.getElementById('cq-co-date').value = nextDayStr;
+  document.getElementById('cq-ci-time').value = '';
+  document.getElementById('cq-co-time').value = '';
+  document.getElementById('cq-s-price').value = '';
+  document.getElementById('cq-special').checked = false;
+  document.getElementById('cq-transport').checked = false;
+  document.getElementById('cq-transport-fee').value = '';
+  document.getElementById('cq-fresh').checked = false;
+  document.getElementById('cq-fresh-price').value = '';
+  document.getElementById('cq-v-start').value = dateStr;
+  document.getElementById('cq-v-end').value = dateStr;
+  document.getElementById('cq-v-sampm').value = 'AM';
+  document.getElementById('cq-v-eampm').value = 'PM';
+  document.getElementById('cq-v-tpd').value = '1';
+  document.getElementById('cq-v-price').value = '';
+  document.getElementById('cq-v-special').checked = false;
+  document.getElementById('cq-v-distance').checked = false;
+  document.getElementById('cq-note').value = '';
+  document.getElementById('cq-s-result').style.display = 'none';
+  document.getElementById('cq-v-result').style.display = 'none';
+  switchCalQuickType('stay');
+  openModal('calQuickModal');
+}
+
+function switchCalQuickType(type) {
+  calQuickType = type;
+  document.getElementById('cq-stay-form').style.display = type === 'stay' ? '' : 'none';
+  document.getElementById('cq-visit-form').style.display = type === 'visit' ? '' : 'none';
+  document.getElementById('cq-tab-stay').classList.toggle('active', type === 'stay');
+  document.getElementById('cq-tab-visit').classList.toggle('active', type === 'visit');
+  onCalQuickPetChange();
+}
+
+function onCalQuickPetChange() {
+  const pet = pets.find(p => p.id === document.getElementById('cq-pet').value);
+  if (!pet) return;
+  if (calQuickType === 'stay'  && pet.stayPrice)  document.getElementById('cq-s-price').value  = pet.stayPrice;
+  if (calQuickType === 'visit' && pet.visitPrice)  document.getElementById('cq-v-price').value  = pet.visitPrice;
+  calQuickType === 'stay' ? calQuickStayCalc() : calQuickVisitCalc();
+}
+
+function calQuickStayCalc() {
+  const ciDate = document.getElementById('cq-ci-date').value;
+  const coDate = document.getElementById('cq-co-date').value;
+  const ciTime = document.getElementById('cq-ci-time').value;
+  const coTime = document.getElementById('cq-co-time').value;
+  const price  = parseFloat(document.getElementById('cq-s-price').value) || 0;
+  const special = document.getElementById('cq-special').checked;
+  const transport = document.getElementById('cq-transport').checked;
+  const tFee   = parseFloat(document.getElementById('cq-transport-fee').value) || 0;
+  const fresh  = document.getElementById('cq-fresh').checked;
+  const fPrice = parseFloat(document.getElementById('cq-fresh-price').value) || 0;
+  const el     = document.getElementById('cq-s-result');
+  if (!ciDate || !coDate || !price) { el.style.display = 'none'; return; }
+
+  let diff = (new Date(coDate) - new Date(ciDate)) / 86400000;
+  if (diff < 0) diff = 0;
+  let extra = 0;
+  if (ciTime && coTime) { const ciH = parseInt(ciTime), coH = parseInt(coTime); extra = Math.abs(coH - ciH) < 12 ? 0.5 : 1; }
+  const days  = diff === 0 ? 1 : (extra > 0 ? diff + extra : diff);
+  const daysR = Math.round(days * 2) / 2;
+  const unit  = price + (special ? 150 : 0);
+  const meals = fresh ? calcFreshMeals(ciDate, ciTime, coDate, coTime) : 0;
+  const total = Math.round(unit * daysR) + (transport ? tFee : 0) + Math.round(fPrice * meals);
+
+  el.style.display = '';
+  el.innerHTML = `<span style="color:var(--muted)">共 ${daysR} 天 · 單價 $${unit}</span><span style="font-weight:700;color:var(--rose)">總計 $${total}</span>`;
+}
+
+function calQuickVisitCalc() {
+  const start   = document.getElementById('cq-v-start').value;
+  const end     = document.getElementById('cq-v-end').value;
+  const sAMPM   = document.getElementById('cq-v-sampm').value;
+  const eAMPM   = document.getElementById('cq-v-eampm').value;
+  const tpd     = parseInt(document.getElementById('cq-v-tpd').value) || 1;
+  const price   = parseFloat(document.getElementById('cq-v-price').value) || 0;
+  const special = document.getElementById('cq-v-special').checked;
+  const dist    = document.getElementById('cq-v-distance').checked;
+  const el      = document.getElementById('cq-v-result');
+  if (!start || !end || !price) { el.style.display = 'none'; return; }
+
+  const dayDiff = Math.floor((new Date(end) - new Date(start)) / 86400000) + 1;
+  let t = dayDiff * tpd;
+  if (sAMPM === 'PM') t -= tpd / 2;
+  if (eAMPM === 'AM') t -= tpd / 2;
+  const times     = Math.max(0, Math.ceil(t));
+  const basePrice = price + (dist ? 100 : 0);
+  const spPrice   = basePrice + 150;
+  const spTimes   = special ? calcSpecialTimes(times, tpd, null) : 0;
+  const total     = Math.round(special ? basePrice * (times - spTimes) + spPrice * spTimes : basePrice * times);
+
+  el.style.display = '';
+  el.innerHTML = `<span style="color:var(--muted)">共 ${times} 次 · 單價 $${basePrice}</span><span style="font-weight:700;color:var(--rose)">總計 $${total}</span>`;
+}
+
+function submitCalQuick() {
+  const pet = pets.find(p => p.id === document.getElementById('cq-pet').value);
+  if (!pet) { toast('⚠️ 請選擇寵物'); return; }
+  const op  = getOp();
+  const note = document.getElementById('cq-note').value.trim();
+  const pct  = pet.pct ?? 0.8;
+  let rec;
+
+  if (calQuickType === 'stay') {
+    const ciDate = document.getElementById('cq-ci-date').value;
+    const coDate = document.getElementById('cq-co-date').value;
+    if (!ciDate || !coDate) { toast('⚠️ 請填寫日期'); return; }
+    const ciTime = document.getElementById('cq-ci-time').value;
+    const coTime = document.getElementById('cq-co-time').value;
+    const price  = parseFloat(document.getElementById('cq-s-price').value) || pet.stayPrice || 0;
+    if (!price) { toast('⚠️ 請填寫住宿單價'); return; }
+    const special = document.getElementById('cq-special').checked;
+    const transport = document.getElementById('cq-transport').checked;
+    const tFee   = parseFloat(document.getElementById('cq-transport-fee').value) || 0;
+    const fresh  = document.getElementById('cq-fresh').checked;
+    const fPrice = parseFloat(document.getElementById('cq-fresh-price').value) || 0;
+
+    let diff = (new Date(coDate) - new Date(ciDate)) / 86400000;
+    if (diff < 0) diff = 0;
+    let extra = 0;
+    if (ciTime && coTime) { const ciH = parseInt(ciTime), coH = parseInt(coTime); extra = Math.abs(coH - ciH) < 12 ? 0.5 : 1; }
+    const days  = diff === 0 ? 1 : (extra > 0 ? diff + extra : diff);
+    const daysR = Math.round(days * 2) / 2;
+    const unit  = price + (special ? 150 : 0);
+    const meals = fresh ? calcFreshMeals(ciDate, ciTime, coDate, coTime) : 0;
+    const total = Math.round(unit * daysR) + (transport ? tFee : 0) + Math.round(fPrice * meals);
+
+    rec = { id: makeId(), type: 'stay', petId: pet.id, petName: pet.name, operator: op,
+      date: ciDate, ciDate, ciTime, coDate, coTime, days,
+      price, pct, special, transport, transportFee: tFee, fresh, freshPrice: fPrice, freshMeals: meals,
+      total, net: Math.round(total * pct), commission: Math.round(total * (1 - pct)),
+      note, paid: false, createdAt: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Shanghai' }) };
+  } else {
+    const start = document.getElementById('cq-v-start').value;
+    const end   = document.getElementById('cq-v-end').value;
+    if (!start || !end) { toast('⚠️ 請填寫日期'); return; }
+    const sAMPM   = document.getElementById('cq-v-sampm').value;
+    const eAMPM   = document.getElementById('cq-v-eampm').value;
+    const tpd     = parseInt(document.getElementById('cq-v-tpd').value) || 1;
+    const price   = parseFloat(document.getElementById('cq-v-price').value) || pet.visitPrice || 0;
+    if (!price) { toast('⚠️ 請填寫到府單價'); return; }
+    const special = document.getElementById('cq-v-special').checked;
+    const dist    = document.getElementById('cq-v-distance').checked;
+
+    const dayDiff = Math.floor((new Date(end) - new Date(start)) / 86400000) + 1;
+    let t = dayDiff * tpd;
+    if (sAMPM === 'PM') t -= tpd / 2;
+    if (eAMPM === 'AM') t -= tpd / 2;
+    const times     = Math.max(0, Math.ceil(t));
+    const basePrice = price + (dist ? 100 : 0);
+    const spPrice   = basePrice + 150;
+    const spTimes   = special ? calcSpecialTimes(times, tpd, null) : 0;
+    const total     = Math.round(special ? basePrice * (times - spTimes) + spPrice * spTimes : basePrice * times);
+
+    rec = { id: makeId(), type: 'visit', petId: pet.id, petName: pet.name, operator: op,
+      date: start, start, startAMPM: sAMPM, end, endAMPM: eAMPM, timesDay: tpd, times,
+      price, pct, special, specialTime: null, specialTimes: special ? spTimes : 0, distance: dist,
+      total, net: Math.round(total * pct), commission: Math.round(total * (1 - pct)),
+      note, paid: false, createdAt: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Shanghai' }) };
+  }
+
+  records.unshift(rec);
+  dbSet('records/' + rec.id, rec);
+  closeModal('calQuickModal');
+  updateMonthFilter();
+  renderRecords();
+  renderCalendar();
+  toast('✅ 預約已儲存');
 }
 
 // ══ Helpers ══

@@ -390,6 +390,74 @@
   </div>
 </div>
 
+<!-- ══ Calendar Quick Add ══ -->
+<div class="modal-bg" id="calQuickModal" onclick="closeBg('calQuickModal',event)">
+  <div class="modal" style="padding:0;display:flex;flex-direction:column;max-height:90vh">
+    <div style="padding:18px 18px 12px;flex-shrink:0;background:#fff;border-radius:22px 22px 0 0">
+      <div class="modal-title" style="margin-bottom:12px">
+        <span>新增預約</span>
+        <button class="modal-close" onclick="closeModal('calQuickModal')">✕</button>
+      </div>
+      <div class="cq-type-bar">
+        <button class="cq-tab active" id="cq-tab-stay" onclick="switchCalQuickType('stay')">🏠 住宿</button>
+        <button class="cq-tab" id="cq-tab-visit" onclick="switchCalQuickType('visit')">🚗 到府</button>
+      </div>
+    </div>
+    <div style="overflow-y:auto;flex:1;padding:0 18px 8px">
+      <div class="form-row"><label>寵物</label>
+        <select class="f" id="cq-pet" onchange="onCalQuickPetChange()"><option value="">— 請選擇 —</option></select>
+      </div>
+      <!-- 住宿 form -->
+      <div id="cq-stay-form">
+        <div class="form-row"><label>入住日期</label><input type="date" class="f" id="cq-ci-date" oninput="calQuickStayCalc()"></div>
+        <div class="form-row"><label>入住時間</label><input type="time" class="f" id="cq-ci-time" oninput="calQuickStayCalc()"></div>
+        <div class="form-row"><label>離開日期</label><input type="date" class="f" id="cq-co-date" oninput="calQuickStayCalc()"></div>
+        <div class="form-row"><label>離開時間</label><input type="time" class="f" id="cq-co-time" oninput="calQuickStayCalc()"></div>
+        <div class="form-row"><label>住宿單價 / 天</label><input type="number" class="f" id="cq-s-price" min="0" placeholder="0" oninput="calQuickStayCalc()"></div>
+        <label class="cq-cb-row"><input type="checkbox" id="cq-special" onchange="calQuickStayCalc()">特殊照護 <span style="color:var(--muted);font-size:0.74rem">+$150/天</span></label>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+          <label class="cq-cb-row" style="flex-shrink:0;margin:0"><input type="checkbox" id="cq-transport" onchange="calQuickStayCalc()">接送服務</label>
+          <input type="number" class="f" id="cq-transport-fee" placeholder="金額" min="0" style="flex:1" oninput="calQuickStayCalc()">
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+          <label class="cq-cb-row" style="flex-shrink:0;margin:0"><input type="checkbox" id="cq-fresh" onchange="calQuickStayCalc()">鮮食</label>
+          <input type="number" class="f" id="cq-fresh-price" placeholder="元/餐" min="0" style="flex:1" oninput="calQuickStayCalc()">
+        </div>
+        <div id="cq-s-result" class="cq-result" style="display:none"></div>
+      </div>
+      <!-- 到府 form -->
+      <div id="cq-visit-form" style="display:none">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+          <div class="form-row" style="margin:0"><label>開始日期</label><input type="date" class="f" id="cq-v-start" oninput="calQuickVisitCalc()"></div>
+          <div class="form-row" style="margin:0"><label>時段</label>
+            <select class="f" id="cq-v-sampm" onchange="calQuickVisitCalc()"><option value="AM">早上</option><option value="PM">晚上</option></select>
+          </div>
+          <div class="form-row" style="margin:0"><label>結束日期</label><input type="date" class="f" id="cq-v-end" oninput="calQuickVisitCalc()"></div>
+          <div class="form-row" style="margin:0"><label>時段</label>
+            <select class="f" id="cq-v-eampm" onchange="calQuickVisitCalc()"><option value="AM">早上</option><option value="PM" selected>晚上</option></select>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+          <div class="form-row" style="margin:0"><label>每日次數</label>
+            <select class="f" id="cq-v-tpd" onchange="calQuickVisitCalc()"><option value="1">1 次</option><option value="2">2 次</option><option value="3">3 次</option></select>
+          </div>
+          <div class="form-row" style="margin:0"><label>到府單價 / 次</label><input type="number" class="f" id="cq-v-price" min="0" placeholder="0" oninput="calQuickVisitCalc()"></div>
+        </div>
+        <label class="cq-cb-row"><input type="checkbox" id="cq-v-special" onchange="calQuickVisitCalc()">特殊照護 <span style="color:var(--muted);font-size:0.74rem">+$150/次</span></label>
+        <label class="cq-cb-row"><input type="checkbox" id="cq-v-distance" onchange="calQuickVisitCalc()">遠距離加給 <span style="color:var(--muted);font-size:0.74rem">+$100/次</span></label>
+        <div id="cq-v-result" class="cq-result" style="display:none"></div>
+      </div>
+      <div class="form-row" style="margin-top:8px"><label>備註</label>
+        <textarea class="f" id="cq-note" placeholder="選填..."></textarea>
+      </div>
+    </div>
+    <div class="form-actions" style="flex-shrink:0;padding:12px 18px;border-top:1px solid var(--border);margin:0">
+      <button class="btn-cancel-form" onclick="closeModal('calQuickModal')">取消</button>
+      <button class="btn-save-form" onclick="submitCalQuick()">✓ 儲存預約</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ Calendar Event Popup ══ -->
 <div class="modal-bg" id="calEventModal" onclick="closeBg('calEventModal',event)">
   <div class="modal">

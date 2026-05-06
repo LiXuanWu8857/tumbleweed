@@ -409,17 +409,17 @@
       </div>
       <!-- 住宿 form -->
       <div id="cq-stay-form">
-        <div class="form-row"><label>入住日期</label><input type="date" class="f" id="cq-ci-date" oninput="calQuickStayCalc()"></div>
+        <div class="form-row"><label>入住日期</label><input type="date" class="f" id="cq-ci-date" oninput="onCqCiDateChange()"></div>
         <div class="form-row"><label>入住時間</label><input type="time" class="f" id="cq-ci-time" oninput="calQuickStayCalc()"></div>
-        <div class="form-row"><label>離開日期</label><input type="date" class="f" id="cq-co-date" oninput="calQuickStayCalc()"></div>
+        <div class="form-row"><label>離開日期</label><input type="date" class="f" id="cq-co-date" oninput="onCqCoDateChange()"></div>
         <div class="form-row"><label>離開時間</label><input type="time" class="f" id="cq-co-time" oninput="calQuickStayCalc()"></div>
         <div class="form-row"><label>住宿單價 / 天</label><input type="number" class="f" id="cq-s-price" min="0" placeholder="0" oninput="calQuickStayCalc()"></div>
         <label class="cq-cb-row"><input type="checkbox" id="cq-special" onchange="calQuickStayCalc()">特殊照護 <span style="color:var(--muted);font-size:0.74rem">+$150/天</span></label>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
           <label class="cq-cb-row" style="flex-shrink:0;margin:0"><input type="checkbox" id="cq-transport" onchange="calQuickStayCalc()">接送服務</label>
           <input type="number" class="f" id="cq-transport-fee" placeholder="金額" min="0" style="flex:1" oninput="calQuickStayCalc()">
         </div>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
           <label class="cq-cb-row" style="flex-shrink:0;margin:0"><input type="checkbox" id="cq-fresh" onchange="calQuickStayCalc()">鮮食</label>
           <input type="number" class="f" id="cq-fresh-price" placeholder="元/餐" min="0" style="flex:1" oninput="calQuickStayCalc()">
         </div>
@@ -428,16 +428,16 @@
       <!-- 到府 form -->
       <div id="cq-visit-form" style="display:none">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-          <div class="form-row" style="margin:0"><label>開始日期</label><input type="date" class="f" id="cq-v-start" oninput="calQuickVisitCalc()"></div>
+          <div class="form-row" style="margin:0"><label>開始日期</label><input type="date" class="f" id="cq-v-start" oninput="onCqVStartChange()"></div>
           <div class="form-row" style="margin:0"><label>時段</label>
             <select class="f" id="cq-v-sampm" onchange="calQuickVisitCalc()"><option value="AM">早上</option><option value="PM">晚上</option></select>
           </div>
-          <div class="form-row" style="margin:0"><label>結束日期</label><input type="date" class="f" id="cq-v-end" oninput="calQuickVisitCalc()"></div>
+          <div class="form-row" style="margin:0"><label>結束日期</label><input type="date" class="f" id="cq-v-end" oninput="onCqVEndChange()"></div>
           <div class="form-row" style="margin:0"><label>時段</label>
             <select class="f" id="cq-v-eampm" onchange="calQuickVisitCalc()"><option value="AM">早上</option><option value="PM" selected>晚上</option></select>
           </div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
           <div class="form-row" style="margin:0"><label>每日次數</label>
             <select class="f" id="cq-v-tpd" onchange="calQuickVisitCalc()"><option value="1">1 次</option><option value="2">2 次</option><option value="3">3 次</option></select>
           </div>
@@ -446,6 +446,10 @@
         <label class="cq-cb-row"><input type="checkbox" id="cq-v-special" onchange="calQuickVisitCalc()">特殊照護 <span style="color:var(--muted);font-size:0.74rem">+$150/次</span></label>
         <label class="cq-cb-row"><input type="checkbox" id="cq-v-distance" onchange="calQuickVisitCalc()">遠距離加給 <span style="color:var(--muted);font-size:0.74rem">+$100/次</span></label>
         <div id="cq-v-result" class="cq-result" style="display:none"></div>
+      </div>
+      <div id="cq-msg-wrap" style="display:none;margin-top:6px;margin-bottom:4px">
+        <div style="font-size:0.72rem;font-weight:700;color:var(--muted);letter-spacing:0.05em;margin-bottom:2px">LINE 訊息預覽</div>
+        <div class="msg-preview" id="cq-msg-preview"></div>
       </div>
       <div class="form-row" style="margin-top:8px"><label>備註</label>
         <textarea class="f" id="cq-note" placeholder="選填..."></textarea>

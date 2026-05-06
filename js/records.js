@@ -66,7 +66,7 @@ function renderCalendar() {
     })
     .map(r => {
       const isPaid = r.paid === true;
-      const bg = isPaid ? getSitterColor(r.operator) : '#b91c1c';
+      const bg = isPaid ? getSitterColor(r.operator) : '#c2601c';
       return {
         id:    r.id,
         label: r.petName,
@@ -226,6 +226,36 @@ function calSetSitterFilterFromBtn(btn) {
 
 // ══ Calendar Quick Add ══
 let calQuickType = 'stay';
+let cqStayOffset = 1, cqVisitOffset = 0;
+
+function onCqCiDateChange() {
+  const ci = document.getElementById('cq-ci-date').value;
+  if (ci) {
+    const co = new Date(new Date(ci + 'T12:00:00').getTime() + cqStayOffset * 86400000);
+    document.getElementById('cq-co-date').value = co.toISOString().slice(0, 10);
+  }
+  calQuickStayCalc();
+}
+function onCqCoDateChange() {
+  const ci = document.getElementById('cq-ci-date').value;
+  const co = document.getElementById('cq-co-date').value;
+  if (ci && co) cqStayOffset = Math.max(0, Math.floor((new Date(co) - new Date(ci)) / 86400000));
+  calQuickStayCalc();
+}
+function onCqVStartChange() {
+  const start = document.getElementById('cq-v-start').value;
+  if (start) {
+    const end = new Date(new Date(start + 'T12:00:00').getTime() + cqVisitOffset * 86400000);
+    document.getElementById('cq-v-end').value = end.toISOString().slice(0, 10);
+  }
+  calQuickVisitCalc();
+}
+function onCqVEndChange() {
+  const s = document.getElementById('cq-v-start').value;
+  const e = document.getElementById('cq-v-end').value;
+  if (s && e) cqVisitOffset = Math.max(0, Math.floor((new Date(e) - new Date(s)) / 86400000));
+  calQuickVisitCalc();
+}
 
 function openCalQuickAdd(dateStr) {
   if (!getOp() || getOp() === '未知') { toast('⚠️ 請先在右上角選擇輸入者'); return; }
@@ -258,6 +288,8 @@ function openCalQuickAdd(dateStr) {
   document.getElementById('cq-note').value = '';
   document.getElementById('cq-s-result').style.display = 'none';
   document.getElementById('cq-v-result').style.display = 'none';
+  document.getElementById('cq-msg-wrap').style.display = 'none';
+  cqStayOffset = 1; cqVisitOffset = 0;
   switchCalQuickType('stay');
   openModal('calQuickModal');
 }
@@ -290,8 +322,9 @@ function calQuickStayCalc() {
   const tFee   = parseFloat(document.getElementById('cq-transport-fee').value) || 0;
   const fresh  = document.getElementById('cq-fresh').checked;
   const fPrice = parseFloat(document.getElementById('cq-fresh-price').value) || 0;
-  const el     = document.getElementById('cq-s-result');
-  if (!ciDate || !coDate || !price) { el.style.display = 'none'; return; }
+  const resEl  = document.getElementById('cq-s-result');
+  const msgWrap = document.getElementById('cq-msg-wrap');
+  if (!ciDate || !coDate || !price) { resEl.style.display = 'none'; msgWrap.style.display = 'none'; return; }
 
   let diff = (new Date(coDate) - new Date(ciDate)) / 86400000;
   if (diff < 0) diff = 0;
@@ -303,8 +336,14 @@ function calQuickStayCalc() {
   const meals = fresh ? calcFreshMeals(ciDate, ciTime, coDate, coTime) : 0;
   const total = Math.round(unit * daysR) + (transport ? tFee : 0) + Math.round(fPrice * meals);
 
-  el.style.display = '';
-  el.innerHTML = `<span style="color:var(--muted)">共 ${daysR} 天 · 單價 $${unit}</span><span style="font-weight:700;color:var(--rose)">總計 $${total}</span>`;
+  resEl.style.display = '';
+  resEl.innerHTML = `<span style="color:var(--muted)">共 ${daysR} 天 · 單價 $${unit}</span><span style="font-weight:700;color:var(--rose)">總計 $${total}</span>`;
+
+  const pet = pets.find(p => p.id === document.getElementById('cq-pet').value);
+  if (pet) {
+    document.getElementById('cq-msg-preview').textContent = buildStayMsg({ operator: getOp(), petName: pet.name, ciDate, ciTime, coDate, coTime, days, price, total, special, transport, transportFee: tFee, fresh, freshPrice: fPrice, freshMeals: meals });
+    msgWrap.style.display = '';
+  }
 }
 
 function calQuickVisitCalc() {
@@ -331,6 +370,13 @@ function calQuickVisitCalc() {
 
   el.style.display = '';
   el.innerHTML = `<span style="color:var(--muted)">共 ${times} 次 · 單價 $${basePrice}</span><span style="font-weight:700;color:var(--rose)">總計 $${total}</span>`;
+
+  const pet = pets.find(p => p.id === document.getElementById('cq-pet').value);
+  const msgWrap = document.getElementById('cq-msg-wrap');
+  if (pet) {
+    document.getElementById('cq-msg-preview').textContent = buildVisitMsg({ operator: getOp(), petName: pet.name, start, end, sAMPM, eAMPM, tpd, times, price, total, special, distance: dist, specialTime: null, specialTimes: spTimes });
+    msgWrap.style.display = '';
+  }
 }
 
 function submitCalQuick(andCopy = false) {

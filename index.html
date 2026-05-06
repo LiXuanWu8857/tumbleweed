@@ -70,9 +70,9 @@
 
 <!-- ══ 寵物 ══ -->
 <div id="page-pets" class="page"><div class="container">
-  <p class="sec-title">寵物名單</p>
+  <button class="btn-secondary" onclick="openPetModal()">＋ 新增寵物資料</button>
+  <div class="sec-title">寵物名單</div>
   <div id="petList"></div>
-  <button class="btn-primary" onclick="openPetModal()">＋ 新增寵物資料</button>
 </div></div>
 
 <!-- ══ 備忘 ══ -->
@@ -232,7 +232,18 @@
   <div class="filter-bar">
     <label>月份</label>
     <select class="filter-sel" id="monthFilter" onchange="renderRecords()"><option value="">全部</option></select>
+    <button class="btn-batch" id="batchToggleBtn" onclick="toggleBatchMode()">批次</button>
   </div>
+  <div class="batch-bar" id="batchBar" style="display:none">
+    <span id="batchCount">已選 0 筆</span>
+    <div style="display:flex;gap:5px;flex-wrap:wrap">
+      <button onclick="batchSelectAll()">全選</button>
+      <button onclick="batchMarkPaid()">✓ 標記已付</button>
+      <button onclick="batchMarkUnpaid()">✗ 標記未付</button>
+      <button onclick="toggleBatchMode()">取消</button>
+    </div>
+  </div>
+  <div class="cal-sitter-filter" id="recSitterFilter" style="display:none"></div>
   <div id="opSummary"></div>
   <div id="recordsList"></div>
 </div></div>
@@ -319,6 +330,21 @@
   </div>
 </div>
 
+<!-- ══ Batch Care Edit Modal ══ -->
+<div class="modal-bg" id="batchCareModal" onclick="closeBg('batchCareModal',event)">
+  <div class="modal" style="padding:0;display:flex;flex-direction:column;max-height:85vh">
+    <div style="padding:18px 18px 0;flex-shrink:0;background:#fff;border-radius:22px 22px 0 0">
+      <div class="modal-title"><span id="batchCareTitle">批次編輯照護步驟</span><button class="modal-close" onclick="closeModal('batchCareModal')">✕</button></div>
+    </div>
+    <input type="hidden" id="bce-pet-id">
+    <div id="batch-care-edit-list" style="padding:0 18px;overflow-y:auto;flex:1"></div>
+    <div class="form-actions" style="flex-shrink:0;padding:12px 18px;border-top:1px solid var(--border)">
+      <button class="btn-cancel-form" onclick="closeModal('batchCareModal')">取消</button>
+      <button class="btn-save-form" onclick="saveBatchCare()">全部儲存</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ Care Manual Modal ══ -->
 <div class="modal-bg" id="careModal">
   <div class="modal" style="padding:0;display:flex;flex-direction:column;max-height:88vh;">
@@ -398,6 +424,21 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- ══ Edit Check Step Modal ══ -->
+<div class="modal-bg" id="editCheckStepModal" onclick="closeBg('editCheckStepModal',event)">
+  <div class="modal">
+    <div class="modal-title"><span>編輯步驟</span><button class="modal-close" onclick="closeModal('editCheckStepModal')">✕</button></div>
+    <input type="hidden" id="ecs-pet-id">
+    <input type="hidden" id="ecs-step-id">
+    <div class="form-row"><label>步驟名稱</label><input class="f" id="ecs-text" placeholder="步驟名稱"></div>
+    <div class="form-row"><label>說明</label><textarea class="f" id="ecs-desc" placeholder="細項內容..." style="height:100px"></textarea></div>
+    <div class="form-actions">
+      <button class="btn-cancel-form" onclick="closeModal('editCheckStepModal')">取消</button>
+      <button class="btn-save-form" onclick="saveCheckStepModal()">儲存</button>
+    </div>
+  </div>
+</div>
 
 <!-- ══ Payee Modal ══ -->
 <div class="modal-bg" id="payeeModal" onclick="closeBg('payeeModal',event)">

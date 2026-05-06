@@ -154,6 +154,14 @@ select.f{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 .filter-bar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
 .filter-bar label{font-size:0.72rem;color:var(--muted);white-space:nowrap;}
 .filter-sel{border:1.5px solid var(--border);border-radius:20px;padding:6px 26px 6px 13px;font-size:0.78rem;font-family:inherit;color:var(--text);background:var(--card);outline:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23b0868e' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center;}
+.btn-batch{background:none;border:1.5px solid var(--border);border-radius:20px;padding:5px 12px;font-size:0.76rem;font-family:inherit;color:var(--muted);cursor:pointer;margin-left:auto;transition:all 0.15s;}
+.btn-batch.active{background:var(--rose);color:#fff;border-color:var(--rose);}
+.batch-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;margin-bottom:10px;background:var(--pink-lt);border-radius:var(--rad-sm);border:1.5px solid var(--border);font-size:0.77rem;font-weight:600;color:var(--rose);}
+.batch-bar button{background:#fff;border:1.5px solid var(--border);border-radius:20px;padding:4px 11px;font-size:0.73rem;font-family:inherit;color:var(--muted);cursor:pointer;transition:all 0.15s;}
+.batch-bar button:hover{border-color:var(--rose);color:var(--rose);}
+.batch-cb{display:flex;align-items:center;padding-right:10px;cursor:pointer;flex-shrink:0;}
+.batch-cb input{width:16px;height:16px;accent-color:var(--rose);cursor:pointer;}
+.rec-card.batch-selected{outline:2px solid var(--rose);outline-offset:-2px;}
 .op-summary{background:var(--card);border:1.5px solid var(--border);border-radius:var(--rad-sm);margin-bottom:12px;overflow:hidden;}
 .op-hdr{padding:8px 13px;background:var(--pink-lt);font-size:0.73rem;font-weight:700;color:var(--rose);letter-spacing:0.05em;}
 .op-row{padding:8px 13px;border-bottom:1px solid var(--border);font-size:0.77rem;}

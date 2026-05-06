@@ -109,26 +109,20 @@ function renderCalendar() {
     weekData.push({ weekDs, weekStart, weekEnd, firstValidIdx, lastValidIdx, lanes, eLane });
   }
 
-  const globalMaxLanes = weekData.reduce((m, wd) => Math.max(m, wd.lanes.length), 0);
   let html = '';
 
   for (let w = 0; w < numWeeks; w++) {
     const { weekDs, weekStart, weekEnd, firstValidIdx, lastValidIdx, lanes } = weekData[w];
-    const rowTemplate = `30px repeat(${globalMaxLanes}, 18px)`;
-    html += `<div class="cal-week-grid" style="grid-template-rows:${rowTemplate}">`;
+    const rowTpl = '30px' + (lanes.length > 0 ? ' repeat(' + lanes.length + ',18px)' : '');
+    html += `<div class="cal-week-grid" style="grid-template-rows:${rowTpl}">`;
 
-    // Day cells — fixed to row 1
     weekDs.forEach((ds, col) => {
-      if (!ds) {
-        html += `<div class="cal-day-cell empty" style="grid-row:1;grid-column:${col + 1}"></div>`;
-        return;
-      }
+      if (!ds) { html += `<div class="cal-day-cell empty" style="grid-row:1;grid-column:${col + 1}"></div>`; return; }
       const isToday = ds === today, isSel = ds === calSelectedDate;
       const dayNum  = parseInt(ds.slice(8));
       html += `<div class="cal-day-cell${isToday ? ' today' : ''}${isSel ? ' selected' : ''}" style="grid-row:1;grid-column:${col + 1}" onclick="calSelectDate('${ds}')"><span class="cal-day-num">${dayNum}</span></div>`;
     });
 
-    // Event bars — placed in explicit lane rows (row 2+)
     for (let lane = 0; lane < lanes.length; lane++) {
       (lanes[lane] || []).forEach(evt => {
         const cL = evt.start < weekStart;
@@ -451,6 +445,80 @@ function submitVisitAndCopy() { const r = buildVisitRec(); if (!r) return; copyM
 
 // ══ Records ══
 
+let batchMode = false;
+let batchSelected = new Set();
+let recOpFilter = null;
+
+function recSetOpFilter(name) {
+  recOpFilter = name;
+  renderRecords();
+}
+
+function recSetOpFilterFromBtn(btn) {
+  recOpFilter = recOpFilter === btn.dataset.name ? null : btn.dataset.name;
+  renderRecords();
+}
+
+function toggleBatchMode() {
+  batchMode = !batchMode;
+  batchSelected.clear();
+  const btn = document.getElementById('batchToggleBtn');
+  if (btn) btn.classList.toggle('active', batchMode);
+  const bar = document.getElementById('batchBar');
+  if (bar) bar.style.display = batchMode ? '' : 'none';
+  updateBatchBar();
+  renderRecords();
+}
+
+function toggleBatchSelect(id) {
+  if (batchSelected.has(id)) batchSelected.delete(id);
+  else batchSelected.add(id);
+  const cb   = document.getElementById('batch-cb-' + id);
+  const card = document.getElementById('batch-card-' + id);
+  if (cb)   cb.checked = batchSelected.has(id);
+  if (card) card.classList.toggle('batch-selected', batchSelected.has(id));
+  updateBatchBar();
+}
+
+function updateBatchBar() {
+  const el = document.getElementById('batchCount');
+  if (el) el.textContent = '已選 ' + batchSelected.size + ' 筆';
+}
+
+function batchSelectAll() {
+  const fm = document.getElementById('monthFilter').value;
+  (fm ? records.filter(r => r.date && r.date.startsWith(fm)) : records).forEach(r => batchSelected.add(r.id));
+  updateBatchBar();
+  renderRecords();
+}
+
+function batchMarkPaid() {
+  if (!batchSelected.size) { toast('⚠️ 請先選擇紀錄'); return; }
+  document.getElementById('payee-rec-id').value = '__batch__';
+  const list = document.getElementById('payee-list');
+  list.innerHTML = sitters.map(s =>
+    `<label style="display:flex;align-items:center;gap:10px;padding:10px 15px;border-bottom:1px solid var(--border);cursor:pointer;font-size:0.86rem;font-weight:500">
+      <input type="radio" name="payee-radio" value="${esc(s.name)}" style="accent-color:var(--rose);width:16px;height:16px">
+      <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${s.color || 'var(--pink)'};border:1px solid rgba(0,0,0,0.1);flex-shrink:0"></span>
+      ${esc(s.name)}
+    </label>`
+  ).join('');
+  openModal('payeeModal');
+}
+
+function batchMarkUnpaid() {
+  if (!batchSelected.size) { toast('⚠️ 請先選擇紀錄'); return; }
+  const count = batchSelected.size;
+  batchSelected.forEach(id => {
+    const r = records.find(x => x.id === id);
+    if (r) { r.paid = false; delete r.payee; dbUpdate('records/' + id, { paid: false, payee: null }); }
+  });
+  batchSelected.clear();
+  updateBatchBar();
+  renderRecords();
+  toast('✅ 已標記 ' + count + ' 筆為未付款');
+}
+
 function updateMonthFilter() {
   const sel = document.getElementById('monthFilter'), cur = sel.value;
   const months = [...new Set(records.map(r => r.date ? r.date.slice(0, 7) : null).filter(Boolean))].sort().reverse();
@@ -491,12 +559,24 @@ function togglePaid(id) {
 }
 
 function confirmPayee() {
-  const id = document.getElementById('payee-rec-id').value;
-  const r  = records.find(x => x.id === id); if (!r) return;
+  const id  = document.getElementById('payee-rec-id').value;
   const sel = document.querySelector('input[name="payee-radio"]:checked');
   if (!sel) { toast('⚠️ 請選擇收款人'); return; }
-  r.paid  = true;
-  r.payee = sel.value;
+  if (id === '__batch__') {
+    const count = batchSelected.size;
+    batchSelected.forEach(bid => {
+      const r = records.find(x => x.id === bid);
+      if (r) { r.paid = true; r.payee = sel.value; dbUpdate('records/' + bid, { paid: true, payee: r.payee }); }
+    });
+    batchSelected.clear();
+    updateBatchBar();
+    closeModal('payeeModal');
+    renderRecords();
+    toast('✅ 已批次標記 ' + count + ' 筆為已付款');
+    return;
+  }
+  const r = records.find(x => x.id === id); if (!r) return;
+  r.paid = true; r.payee = sel.value;
   dbUpdate('records/' + id, { paid: true, payee: r.payee });
   closeModal('payeeModal');
   renderRecords();
@@ -634,6 +714,28 @@ function renderRecords() {
   const fm = document.getElementById('monthFilter').value;
   let filtered = fm ? records.filter(r => r.date && r.date.startsWith(fm)) : records;
 
+  // Render sitter filter pills
+  const filterEl = document.getElementById('recSitterFilter');
+  if (filterEl) {
+    const opNames = [...new Set(filtered.map(r => r.operator).filter(Boolean))];
+    if (opNames.length >= 1) {
+      filterEl.innerHTML =
+        `<button class="cal-sitter-pill all-pill${!recOpFilter ? ' active' : ''}" onclick="recSetOpFilter(null)">全部</button>` +
+        opNames.map(name => {
+          const bg  = getSitterColor(name);
+          const txt = isColorDark(bg) ? '#fff' : '#2a1a1d';
+          return `<button class="cal-sitter-pill${recOpFilter === name ? ' active' : ''}" style="background:${bg};color:${txt}" data-name="${esc(name)}" onclick="recSetOpFilterFromBtn(this)"><span class="cal-sitter-dot" style="background:${isColorDark(bg) ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.2)'}"></span>${esc(name)}</button>`;
+        }).join('');
+      filterEl.style.display = '';
+    } else {
+      filterEl.style.display = 'none';
+      recOpFilter = null;
+    }
+  }
+
+  // Apply operator filter
+  if (recOpFilter) filtered = filtered.filter(r => r.operator === recOpFilter);
+
   const opMap = {};
   filtered.forEach(r => {
     const op = r.operator || '未知';
@@ -647,24 +749,17 @@ function renderRecords() {
   const opEl = document.getElementById('opSummary');
   if (Object.keys(opMap).length) {
     opEl.innerHTML = `<div class="op-summary"><div class="op-hdr">各保母統計</div>${Object.entries(opMap).map(([op, s]) => {
-      const netSettle   = s.owedToCompany - s.owedToSitter;
-      const hasSettle   = s.owedToCompany > 0 || s.owedToSitter > 0;
-      const settleHtml  = hasSettle
-        ? `<div class="op-settle">
-             ${s.owedToCompany ? `<span>應付公司 <b>${fmt(s.owedToCompany)}</b></span>` : ''}
-             ${s.owedToSitter  ? `<span>應收公司 <b>${fmt(s.owedToSitter)}</b></span>`  : ''}
-             <span class="${netSettle >= 0 ? 'settle-pay' : 'settle-recv'}">${netSettle >= 0 ? '需付' : '可收'} <b>${fmt(Math.abs(netSettle))}</b></span>
-           </div>` : '';
+      const hasSettle     = s.owedToCompany > 0 || s.owedToSitter > 0;
+      const netCommission = hasSettle ? (s.owedToCompany - s.owedToSitter) : s.commission;
       return `<div class="op-row">
         <div class="op-row-main">
           <span class="op-name">${esc(op)} <small style="font-weight:400;color:var(--muted)">(${s.count}筆)</small></span>
           <div class="op-nums">
             <span>總 <span class="hi">${fmt(s.total)}</span></span>
             <span>實拿 <span class="hi">${fmt(s.net)}</span></span>
-            <span>抽成 ${fmt(s.commission)}</span>
+            <span>抽成 <span class="${netCommission < 0 ? 'settle-recv' : 'settle-pay'}">${fmt(netCommission)}</span>${s.owedToSitter ? ` · 非本人收款: ${fmt(s.owedToSitter)}` : ''}</span>
           </div>
         </div>
-        ${settleHtml}
       </div>`;
     }).join('')}</div>`;
   } else opEl.innerHTML = '';
@@ -677,8 +772,10 @@ function renderRecords() {
 
   listEl.innerHTML = Object.keys(grouped).sort().reverse().map(month => {
     const recs   = grouped[month];
-    const mTotal = recs.reduce((a, r) => a + (r.total || 0), 0);
-    const mNet   = recs.reduce((a, r) => a + ((r.payee && r.payee === r.operator) ? (r.total || 0) : (r.net || 0)), 0);
+    const mTotal        = recs.reduce((a, r) => a + (r.total || 0), 0);
+    const mOwedToCompany = recs.reduce((a, r) => a + (r.paid && r.payee && r.payee === r.operator ? (r.commission || 0) : 0), 0);
+    const mOwedToSitter  = recs.reduce((a, r) => a + (r.paid && r.payee && r.payee !== r.operator ? (r.net || 0) : 0), 0);
+    const mNetCommission = (mOwedToCompany > 0 || mOwedToSitter > 0) ? mOwedToCompany - mOwedToSitter : recs.reduce((a, r) => a + (r.commission || 0), 0);
 
     const recHtml = recs.map(r => {
       const typeLabel  = r.type === 'stay' ? '🏠 住宿' : '🚗 到府';
@@ -690,8 +787,9 @@ function renderRecords() {
       // 實拿 display: if payee === operator → full amount; if payee !== operator → net; no payee → net
       const displayNet = (r.payee && r.payee === r.operator) ? r.total : r.net;
       const payeeMeta  = r.paid && r.payee ? ` · 收款人: ${esc(r.payee)}` : '';
-      return `<div class="rec-card" style="background:${sBg}18;border-left:3px solid ${sBg}">
+      return `<div class="rec-card${batchMode && batchSelected.has(r.id) ? ' batch-selected' : ''}" id="batch-card-${r.id}" style="background:${sBg}18;border-left:3px solid ${sBg}">
         <div class="rec-hdr">
+          ${batchMode ? `<label class="batch-cb" onclick="event.stopPropagation()"><input type="checkbox" id="batch-cb-${r.id}" ${batchSelected.has(r.id) ? 'checked' : ''} onchange="toggleBatchSelect('${r.id}')"></label>` : ''}
           <div>
             <div class="rec-title">${esc(r.petName)} · ${typeLabel} · <span style="font-size:0.75rem;font-weight:500;color:${r.paid ? 'var(--green)' : 'var(--danger)'}">${r.paid ? '✓ 已付款' : '✗ 未付款'}</span></div>
             <div class="rec-meta">${dateMeta} · ${esc(r.operator || '')}${payeeMeta}</div>
@@ -718,6 +816,6 @@ function renderRecords() {
         <button class="rec-expand-btn" id="rb-${r.id}" onclick="toggleRecDetail('${r.id}')">▸ 展開</button>
       </div>`;
     }).join('');
-    return `<div class="month-hdr"><span class="month-label">${month.replace('-', '年')}月</span><span class="month-stats">總額 ${fmt(mTotal)} · 實拿 ${fmt(mNet)}</span></div>${recHtml}`;
+    return `<div class="month-hdr"><span class="month-label">${month.replace('-', '年')}月</span><span class="month-stats">總額 ${fmt(mTotal)} · 抽成 ${fmt(mNetCommission)}</span></div>${recHtml}`;
   }).join('');
 }

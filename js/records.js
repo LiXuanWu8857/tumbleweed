@@ -3,6 +3,7 @@ const _tzDate = new Date().toLocaleDateString('sv', { timeZone: 'Asia/Shanghai' 
 let calYear  = parseInt(_tzDate.slice(0, 4));
 let calMonth = parseInt(_tzDate.slice(5, 7)) - 1;
 let calSelectedDate = null;
+let calEventCurrentId = null;
 let calSitterFilter = null;
 
 // ══ Special care timing ══
@@ -159,6 +160,7 @@ function openCalEventModal(id) {
   const qty     = isStay ? (r.days + ' 天') : (r.times + ' 次');
   const paidTxt = r.paid ? ('✓ 已付款' + (r.payee ? ' · ' + r.payee : '')) : '✗ 未付款';
 
+  calEventCurrentId = id;
   document.getElementById('cev-title').textContent = r.petName + ' · ' + typeLabel;
 
   // Populate operator select in header
@@ -179,12 +181,23 @@ function openCalEventModal(id) {
     <div class="rec-dr"><span class="rec-dl">數量</span><span class="rec-dv">${esc(qty)}</span></div>
     <div class="rec-dr"><span class="rec-dl">保母</span><span class="rec-dv">${esc(r.operator || '')}</span></div>
     <div class="rec-dr"><span class="rec-dl">金額</span><span class="rec-dv">${fmt(r.total)}</span></div>
-    <div class="rec-dr"><span class="rec-dl">付款</span><span class="rec-dv ${r.paid ? 'paid' : 'unpaid'}">${paidTxt}</span></div>
+    <div class="rec-dr"><span class="rec-dl">付款</span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="rec-dv ${r.paid ? 'paid' : 'unpaid'}">${paidTxt}</span>
+        <button class="btn-ghost" style="padding:2px 10px;font-size:0.75rem;height:24px;white-space:nowrap" onclick="togglePaid('${id}')">${r.paid ? '↩ 取消' : '✓ 標記'}</button>
+      </div>
+    </div>
     ${r.note ? `<div class="rec-dr"><span class="rec-dl">備註</span><span class="rec-dv">${esc(r.note)}</span></div>` : ''}`;
   document.getElementById('cev-actions').innerHTML =
     (r.petId ? `<button class="btn-ghost" style="flex:1" onclick="closeModal('calEventModal');openCareModal('${r.petId}')">📋 照護手冊</button>` : '') +
     `<button class="btn-ghost" style="flex:1" onclick="calEventOpenEdit('${id}')">✏️ 編輯預約</button>`;
   openModal('calEventModal');
+}
+
+function refreshCalEventIfOpen() {
+  if (!calEventCurrentId) return;
+  const modal = document.getElementById('calEventModal');
+  if (modal && modal.classList.contains('open')) openCalEventModal(calEventCurrentId);
 }
 
 function calEventOpenEdit(id) {
@@ -759,6 +772,7 @@ function togglePaid(id) {
     delete r.payee;
     dbUpdate('records/' + id, { paid: false, payee: null });
     renderRecords();
+    refreshCalEventIfOpen();
   } else {
     // Mark paid: show payee selection modal
     const modal = document.getElementById('payeeModal');
@@ -800,6 +814,7 @@ function confirmPayee() {
   dbUpdate('records/' + id, { paid: true, payee: r.payee });
   closeModal('payeeModal');
   renderRecords();
+  refreshCalEventIfOpen();
 }
 
 function deleteRecord(id) {

@@ -133,7 +133,8 @@ function dbRemove(path)       { window._remove(window._ref(window._db, path)); }
 function switchTab(tab) {
   ['sitters', 'pets', 'care', 'stay', 'visit', 'records'].forEach(t => {
     document.getElementById('page-' + t).classList.toggle('active', t === tab);
-    document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+    const btn = document.getElementById('tab-' + t);
+    if (btn) btn.classList.toggle('active', t === tab);
   });
   if (['stay', 'visit', 'care'].includes(tab)) populatePetSelects();
   if (tab === 'care') renderCarePetGrid();

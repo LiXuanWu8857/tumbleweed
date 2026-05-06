@@ -65,14 +65,15 @@ function renderCalendar() {
       return s && e && s <= monthEnd && e >= monthStart;
     })
     .map(r => {
-      const bg = getSitterColor(r.operator);
+      const isPaid = r.paid === true;
+      const bg = isPaid ? getSitterColor(r.operator) : '#b91c1c';
       return {
         id:    r.id,
         label: r.petName,
         start: r.type === 'stay' ? r.ciDate : r.start,
         end:   r.type === 'stay' ? r.coDate : r.end,
         bg,
-        fg:    isColorDark(bg) ? '#fff' : '#2a1a1d'
+        fg:    isPaid ? (isColorDark(bg) ? '#fff' : '#2a1a1d') : '#fff'
       };
     });
 

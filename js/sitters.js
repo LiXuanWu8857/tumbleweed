@@ -1,5 +1,19 @@
 // ══ Sitters ══
 
+function isRedTone(hex) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return r > 140 && g < 70 && b < 70;
+}
+
+function validateSitterColor(input) {
+  if (isRedTone(input.value)) {
+    toast('⚠️ 紅色系保留給未付款標記，請選擇其他顏色');
+    input.value = '#e8829a';
+  }
+}
+
 function renderSitterList() {
   const sel = document.getElementById('sitterSel');
   if (!sel) return;
@@ -86,7 +100,9 @@ function saveSitter() {
   if (!bankAccount) { toast('⚠️ 請輸入帳戶號碼'); return; }
   if (!phone)       { toast('⚠️ 請輸入電話'); return; }
   const editId = document.getElementById('sm-id').value;
-  const data   = { name, bankName, bankCode, bankAccount, phone, note: document.getElementById('sm-note').value.trim(), color: document.getElementById('sm-color').value };
+  const color  = document.getElementById('sm-color').value;
+  if (isRedTone(color)) { toast('⚠️ 紅色系保留給未付款標記，請選擇其他顏色'); return; }
+  const data   = { name, bankName, bankCode, bankAccount, phone, note: document.getElementById('sm-note').value.trim(), color };
   let sitter;
   if (editId) {
     const i = sitters.findIndex(x => x.id === editId);
